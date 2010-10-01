@@ -1,0 +1,16 @@
+#!/bin/bash
+
+returncode=0
+
+cant=`expr $(ps -ef | grep "feponio" | grep $USER | grep -v "startfeponio" | grep -v "stopfeponio" | grep -v grep | wc -l)`
+
+if [ $cant -eq 0 ]; then
+   echo "No se encuentra demonio corriendo."
+   returncode=1
+else
+   ps -ef | grep "feponio" | grep $USER | grep -v "startfeponio" | grep -v "stopfeponio" | grep -v grep | while read a b c
+   do
+      echo "Matando el proceso demonio con PID $b"
+      kill $b
+   done
+fi

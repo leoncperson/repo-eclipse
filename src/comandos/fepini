@@ -1,0 +1,144 @@
+#!/bin/bash
+
+returncode=0
+
+# ---------------------
+# -- Checkeo de grupo --
+# ---------------------
+echo "Verificando que Perl este instalado..."
+vperl=`/usr/bin/perl -v`
+vp1=`echo ${vperl#*[Vv]}`
+vp2=`echo ${vp1%% *}`
+version=`echo ${vp2%%.*}`
+if [ -z $version ]; then
+	version=0
+fi
+
+if [ $version -lt 5 ]; then
+	clear
+	echo ""
+	echo "ERROR !:"
+	echo ""
+	echo "Este proceso de instalacion solo puede ser"
+	echo "ejecutado si Perl 5 o superior esta instalado."
+	echo ""
+	echo "Efectue la instalacion de Perl"
+	echo "e inicie nuevamente el procedimiento de instalacion."
+	echo ""
+	returncode=1
+else
+	echo "Perl esta instalado correctamente"
+fi
+
+if [ $returncode -eq 0 ]; then
+   if [ $GRUPO ]; then
+      echo La variable grupo ya está inicializada con el valor:  $GRUPO
+      returncode=2
+   else
+      #seteo el directorio del tp
+      GRUPO="/home/drmk/facultad/7508/tp/src"
+   fi
+fi
+
+# Seteo la variables para ser utilizadas por los comandos
+PATH_ARCH_MAEPRO="$GRUPO/pp/maepro.txt"
+PATH_ARCH_PRESU="$GRUPO/pp/presu.txt"
+PATH_PRESU_OLD=$GRUPO/pp/old
+
+PATH_ARRIBOS=$GRUPO/arribos
+PATH_FACT_RECIBIDAS=$GRUPO/recibidos
+PATH_FACT_RECHAZADAS=$GRUPO/rechazados
+PATH_FACT_ACEPTADAS=$GRUPO/aceptados
+
+PATH_ARCH_FACT_PAGAR=$GRUPO/facturas/apagar.txt
+PATH_ARCH_FACT_PAGAR_OLD=$GRUPO/facturas/old
+
+PATH_LISTADOS=$GRUPO/facturas/listados
+PATH_LOG=$GRUPO/comandos/log
+PATH_COMANDOS=$GRUPO/comandos
+
+cant=`expr $(ls $PATH_ARCH_MAEPRO | wc -w)`
+
+if [ $returncode -eq 0 ]; then
+   if [ $cant -gt 0 ]; then
+      echo "El archivo de maestro de proveedores existe"
+   else
+      echo "El archivo maestro de proveedores no existe"
+      GRUPO=""
+      returncode=3
+   fi
+fi
+
+cant=`expr $(ls $PATH_ARCH_PRESU | wc -w)`
+
+if [ $returncode -eq 0 ]; then
+   if [ $cant -gt 0 ]; then
+      echo "El archivo de presupuestos existe"
+   else
+      echo "El archivo de presupuestos no existe"
+      GRUPO=""
+      returncode=4 
+   fi
+fi
+
+if [ $returncode -eq 0 ]; then
+   echo "**********************************************************"
+   echo "*           Inicialización de Ambiente Concluída         *"
+   echo "*                        Ambiente                        *"
+   echo "**********************************************************"
+   echo " GRUPO:                       $GRUPO"
+   echo " PATH_ARCH_MAEPRO:            $PATH_ARCH_MAEPRO"
+   echo " PATH_ARCH_PRESU:             $PATH_ARCH_PRESU"
+   echo " PATH_PRESU_OLD:              $PATH_PRESU_OLD"
+   echo " PATH_ARRIBOS:                $PATH_ARRIBOS"
+   echo " PATH_FACT_RECIBIDAS:         $PATH_FACT_RECIBIDAS"
+   echo " PATH_FACT_RECHAZADAS:        $PATH_FACT_RECHAZADAS"
+   echo " PATH_FACT_ACEPTADAS:         $PATH_FACT_ACEPTADAS"
+   echo " PATH_ARCH_FACT_PAGAR:        $PATH_ARCH_FACT_PAGAR"
+   echo " PATH_ARCH_FACT_PAGAR_OLD:    $PATH_ARCH_FACT_PAGAR_OLD"
+   echo " PATH_LISTADOS:               $PATH_LISTADOS"
+   echo " PATH_LOG:                    $PATH_LOG"
+   echo " PATH_COMANDOS:               $PATH_COMANDOS"
+   echo "**********************************************************"
+
+   # seteamos el PATH
+   export PATH=$PATH:$comandos
+
+   #exportamos las variables de entorno
+   export GRUPO
+   export PATH_ARCH_MAEPRO
+   export PATH_ARCH_PRESU
+   export PATH_PRESU_OLD
+   export PATH_ARRIBOS
+   export PATH_FACT_RECIBIDAS
+   export PATH_FACT_RECHAZADAS
+   export PATH_FACT_ACEPTADAS
+   export PATH_ARCH_FACT_PAGAR
+   export PATH_ARCH_FACT_PAGAR_OLD
+   export PATH_LISTADOS
+   export PATH_LOG
+   export PATH_COMANDOS
+fi
+
+
+
+#if [ $returncode -eq 0 ]; then
+#   cant=`expr $(ps -ef | grep "feponio" | grep $USER | grep -v grep | wc -l)`
+#   if [ $cant -eq 0 ]; then
+#      echo "No se encuentra feponio corriendo."
+#      #Iniciamos el demonio
+#      startfeponio
+#      sleep 1
+#      ps -ef | grep "feponio" | grep $USER | grep -v grep | while read a b c
+#      do
+#         echo "----------------------------------------------------------"
+#         echo " Demonio corriendo bajo el no: $b"
+#         echo "----------------------------------------------------------"
+#      done
+#   else
+#      echo "Se encuentra demonio corriendo."
+#      returncode=5
+#   fi
+#fi
+
+#export GRUPO
