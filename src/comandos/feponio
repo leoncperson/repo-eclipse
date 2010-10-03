@@ -1,0 +1,101 @@
+#!/bin/bash
+
+# Variable utilizada como código de retorno
+returncode=0
+#Tiempo de espera del thread del demonio. En milisegundos
+tmpespera=3
+
+#----------------------------------------------------------------------------------------
+#Funcion que verfica si feprima se esta ejecutando, de no ser asi, lo ejecuta.
+#----------------------------------------------------------------------------------------
+function invocarFeprima {
+  #ya tuve que haber verificado que habia archivos
+  # Verifico que se este ejecutando.
+  cant=`expr $(ps -ef | grep "feprima" | grep $USER | grep -v grep | wc -l)`
+
+  # Si no se esta ejecutando feprima, lo invoco.
+  if [ $cant -eq 0 ]; then
+    feprima
+    # Obtengo el process id para mostrarlo por pantalla
+    ps -ef | grep "feprima" | grep $USER | grep -v grep | while read a b c
+    do
+      echo "Se inicio feprima con proceso ID: $b"
+    done
+  else
+    # Ya se estaba ejecutando
+    echo "No se puede iniciar feprima pues ya está el proceso corriendo"		
+  fi
+}
+
+#----------------------------------------------------------------------------------------
+# Funcion que verifica si hay archivos en la carpeta "arribos" que se deben validar.
+# Coprueba que sea valido el formato del nombre del archivo: <CAE>
+#----------------------------------------------------------------------------------------
+function validarArchivos {
+  local nombreArchivo
+  local cant_validos=0
+  
+  # Recorro directorio arribos... 
+  for nombreArchivo in ` ls "$PATH_ARRIBOS" `
+  do
+    # Por default el archivo es invalido
+    archivoValido=0
+
+    # Para cada nombre de archivo, verifico su formato (14 digitos).
+    formatoValido=`echo $nombreArchivo | grep ^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$`    
+
+    if [ "$formatoValido" = "$nombreArchivo" ]; then
+      archivoValido=1
+    fi
+
+    if [ $archivoValido -eq 0 ]; then
+      #mover a rechazados
+      mover $PATH_ARRIBOS/$nombreArchivo $PATH_FACT_RECHAZADAS/$nombreArchivo
+    else
+      #mover a aceptados e incrementar cantidad de validos
+      cant_validos=`expr $cant_validos + 1`
+      mover $PATH_ARRIBOS/$nombreArchivo $PATH_FACT_RECIBIDAS/$nombreArchivo
+    fi
+  done
+
+  # Si hay archivos Recibidos a procesar, invoco a feprima
+  cantRecibidos=`expr $(ls $PATH_FACT_RECIBIDAS | wc -w)`
+  if [ $cantRecibidos -gt 0 ]; then
+    invocarFeprima
+    echo "se econtraron archivos recibidos!!!"
+  else
+    echo "NO se econtraron archivos recibidos!!!"
+  fi
+}
+
+#----------------------------------------------------------------------------------------------
+# demonio
+#----------------------------------------------------------------------------------------------
+# Lo verifico si el ambiente esta incializado
+if [ $GRUPO ]; then
+  #se inicializo el ambiente.
+
+  #verifico que no haya otro demonio corriendo
+  cant=`expr $(ps -ef | grep "feponio" | grep $USER | grep -v "startfeponio" | grep -v "stopfeponio" | grep -v grep | wc -l)`
+
+  if [ $cant -eq 3 ]; then
+    #no se esta ejecutando
+    returncode=1
+  else
+    #ya se esta ejecutando
+    echo "Ya se está ejecutando el demonio."
+  fi
+
+else
+  #no se inicializo el ambiente
+  echo "Debe inicializar el ambiente primero."
+fi
+
+#si el ambiente esta inicializado => ejecuto el demonio
+if [ $returncode -eq 1 ]; then
+  while [ true ] 
+  do
+    validarArchivos
+    sleep $tmpespera
+  done
+fi
