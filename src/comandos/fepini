@@ -32,7 +32,7 @@ fi
 
 if [ $returncode -eq 0 ]; then
    if [ $GRUPO ]; then
-      echo La variable grupo ya está inicializada con el valor:  $GRUPO
+      echo "La variable grupo ya está inicializada con el valor:  $GRUPO"
       returncode=2
    else
       #seteo el directorio del tp
@@ -43,27 +43,25 @@ fi
 # Seteo la variables para ser utilizadas por los comandos
 PATH_ARCH_MAEPRO="$GRUPO/pp/maepro.txt"
 PATH_ARCH_PRESU="$GRUPO/pp/presu.txt"
-PATH_PRESU_OLD=$GRUPO/pp/old
+PATH_PRESU_OLD="$GRUPO/pp/old"
 
-PATH_ARRIBOS=$GRUPO/arribos
-PATH_FACT_RECIBIDAS=$GRUPO/recibidos
-PATH_FACT_RECHAZADAS=$GRUPO/rechazados
-PATH_FACT_ACEPTADAS=$GRUPO/aceptados
+PATH_ARRIBOS="$GRUPO/arribos"
+PATH_FACT_RECIBIDAS="$GRUPO/recibidos"
+PATH_FACT_RECHAZADAS="$GRUPO/rechazados"
+PATH_FACT_ACEPTADAS="$GRUPO/aceptados"
 
-PATH_ARCH_FACT_PAGAR=$GRUPO/facturas/apagar.txt
-PATH_ARCH_FACT_PAGAR_OLD=$GRUPO/facturas/old
+PATH_ARCH_FACT_PAGAR="$GRUPO/facturas/apagar.txt"
+PATH_ARCH_FACT_PAGAR_OLD="$GRUPO/facturas/old"
 
-PATH_LISTADOS=$GRUPO/facturas/listados
-PATH_LOG=$GRUPO/comandos/log
-PATH_COMANDOS=$GRUPO/comandos
+PATH_LISTADOS="$GRUPO/facturas/listados"
+PATH_LOG="$GRUPO/comandos/log"
+PATH_COMANDOS="$GRUPO/comandos"
 
 cant=`expr $(ls $PATH_ARCH_MAEPRO | wc -w)`
 
 if [ $returncode -eq 0 ]; then
-   if [ $cant -gt 0 ]; then
-      echo "El archivo de maestro de proveedores existe"
-   else
-      echo "El archivo maestro de proveedores no existe"
+   if [ $cant -eq 0 ]; then
+      echo "Inicializacion de ambiente no fie exitosa. El archivo maestro de proveedores no existe"
       GRUPO=""
       returncode=3
    fi
@@ -72,10 +70,8 @@ fi
 cant=`expr $(ls $PATH_ARCH_PRESU | wc -w)`
 
 if [ $returncode -eq 0 ]; then
-   if [ $cant -gt 0 ]; then
-      echo "El archivo de presupuestos existe"
-   else
-      echo "El archivo de presupuestos no existe"
+   if [ $cant -eq 0 ]; then
+      echo "Inicializacion de ambiente no fie exitosa. El archivo de presupuesto no existe"
       GRUPO=""
       returncode=4 
    fi
@@ -120,25 +116,21 @@ if [ $returncode -eq 0 ]; then
    export PATH_COMANDOS
 fi
 
-
-
-#if [ $returncode -eq 0 ]; then
-#   cant=`expr $(ps -ef | grep "feponio" | grep $USER | grep -v grep | wc -l)`
-#   if [ $cant -eq 0 ]; then
+if [ $returncode -eq 0 ]; then
+    cant=`expr $(ps -ef | grep "feponio" | grep $USER | grep -v grep | wc -l)`
+    if [ $cant -eq 0 ]; then
 #      echo "No se encuentra feponio corriendo."
-#      #Iniciamos el demonio
-#      startfeponio
-#      sleep 1
-#      ps -ef | grep "feponio" | grep $USER | grep -v grep | while read a b c
-#      do
-#         echo "----------------------------------------------------------"
-#         echo " Demonio corriendo bajo el no: $b"
-#         echo "----------------------------------------------------------"
-#      done
-#   else
-#      echo "Se encuentra demonio corriendo."
-#      returncode=5
-#   fi
-#fi
-
-#export GRUPO
+      #Iniciamos el demonio
+      startfeponio
+      sleep 1
+      ps -ef | grep "feponio" | grep $USER | grep -v grep | while read a b c
+      do
+         echo "----------------------------------------------------------"
+         echo " Demonio corriendo bajo el no: $b"
+         echo "----------------------------------------------------------"
+      done
+   else 
+      echo "Inicializacion de ambiente no fue exitosa. El demonio feponio se encuentra corriendo."
+      returncode=5
+   fi
+fi
