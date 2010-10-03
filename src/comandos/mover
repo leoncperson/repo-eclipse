@@ -15,16 +15,16 @@ else
    fi
 fi
 
-#Controlo si origen y destino son iguales
+#Verifico si origen y destino son iguales
 if [ $1 = $2 -a $returncode -eq 0 ]; then
-   echo "Origen y destino son iguales"
+   echo "MOVER - Origen y destino son iguales"
    returncode=2
 fi
 
-#Controlo si el archivo existe en el destino
+#Verifico si el archivo existe en el destino
 existe="no"
 if [ -f $2 -a $returncode -eq 0 ]; then
-   echo "El archivo existe en el directorio destino"
+   echo "MOVER - El archivo existe en el directorio destino"
    existe="si"
 fi
 
@@ -53,11 +53,11 @@ if [ $returncode -eq 0 ]; then
 
       #Controlo si existe la carpeta /dup
       if [ -d $carpeta_dup ]; then
-         echo "Existe la carpeta $carpeta_dup"
+         echo "MOVER - Existe la carpeta $carpeta_dup"
       else
          mkdir $carpeta_dup
          if [ $? -ne 0 ]; then
-            echo "Error en la creacion de la carpeta $carpeta_dup"
+            echo "MOVER - Error en la creacion de la carpeta $carpeta_dup"
             returncode=3
          else
             echo "Se creo la carpeta $carpeta_dup"
@@ -81,14 +81,14 @@ if [ $returncode -eq 0 ]; then
       fi
       mv $1 $ruta_dup
       if [ $? -ne 0 ]; then
-         echo "Error al mover el archivo $1 a la carpeta de duplicados"
+         echo "MOVER - Error al mover el archivo $1 a la carpeta de duplicados"
          returncode=4
       fi
    else
       ruta_dup=$ruta_dup".000"
       mv "$1"  "$ruta_dup"
       if [ $? -ne 0 ]; then
-         echo "Error al mover el archivo $1 a la carpeta de duplicados" 
+         echo "MOVER - Error al mover el archivo $1 a la carpeta de duplicados" 
          returncode=4
       fi
    fi 
@@ -96,17 +96,17 @@ if [ $returncode -eq 0 ]; then
    #Se realiza la copia porque estamos seguros que no se haya en el destino
       mv $1 $2
       if [ $? -ne 0 ]; then
-         echo "Error al mover el archivo $1 a la carpeta destino"
+         echo "MOVER - Error al mover el archivo $1 a la carpeta destino"
          returncode=5
       fi
    fi
 fi
 
 if [ $returncode -eq 0 ]; then
-   echo "Se movió el archivo correctamente desde: $1 hacia $2"
+   echo "MOVER - Se movió el archivo correctamente desde: $1 hacia $2"
 fi
 
 if [ $returncode -eq 0 -a $# -eq 3 ]; then
    glog $3 "Mover exitoso desde: $1 hacia $2"
-   echo "Se grabó en el log: $3"
+   echo "MOVER - Se grabó en el log: $3"
 fi

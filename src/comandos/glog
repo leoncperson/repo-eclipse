@@ -1,18 +1,10 @@
 #!/bin/bash
 
-#
-# Comando: Glog
-# Autor: Mariano Quiroga
-# Version: 1.0.0
-
 # Sintaxis de ejecucion: Glog <nombreComando> <mensaje> [tipoMensaje]
 sintaxisEjecucion="Glog <nombreComando> <mensaje> [tipoMensaje]";
 
 # Nombre comando.
 modulo="Glog"
-
-# Ruta de archivos log.
-
 
 # Tipo de mensaje default.
 # I: Informativo
