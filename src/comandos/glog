@@ -33,7 +33,7 @@ if [ "$#" -eq 2 ]; then
 	mensaje=$2;
 	mensajeLog="$fechaInstante$separador$tipoMensaje$separador$mensaje";
 	longitudMensaje=`echo $mensajeLog | wc -c`;	
-	logPathFilename=$PATH_LOG$nombreComando;
+	logPathFilename=$PATH_LOG/$nombreComando;
 		
 	if [ $longitudMensaje -lt 132 ]; then 
 		echo -e $mensajeLog >> $logPathFilename;
@@ -48,7 +48,7 @@ fi
 if [ "$#" -eq 3 ]; then
 	nombreComando=$1;
 	mensaje=$2;
-	logPathFilename=$PATH_LOG$nombreComando;
+	logPathFilename=$PATH_LOG/$nombreComando;
 	if [[ $3 = "I" || $3 = "W" || $3 = "E" || $3 = "S" ]]; then
 		tipoMensaje=$3;
 		mensajeLog="$fechaInstante$separador$tipoMensaje$separador$mensaje";
