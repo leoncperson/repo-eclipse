@@ -1,9 +1,14 @@
 #!/bin/bash
 
+#Codigos de Retorno
+OK=0
+DEMONIO_YA_ESTA_CORRIENDO=1
+
 # Variable utilizada como código de retorno
-returncode=0
+returncode=$OK
+
 #Tiempo de espera del thread del demonio. En milisegundos
-tmpespera=3
+TMRESPERA=3
 
 #----------------------------------------------------------------------------------------
 #Funcion que verfica si feprima se esta ejecutando, de no ser asi, lo ejecuta.
@@ -19,11 +24,11 @@ function invocarFeprima {
     # Obtengo el process id para mostrarlo por pantalla
     ps -ef | grep "feprima" | grep $USER | grep -v grep | while read a b c
     do
-      echo "Se inicio feprima con proceso ID: $b"
+      echo "FEPONIO - Se inicio feprima con proceso ID: $b"
     done
   else
     # Ya se estaba ejecutando
-    echo "No se puede iniciar feprima pues ya está el proceso corriendo"		
+    echo "FEPONIO - No se puede iniciar feprima pues ya está el proceso corriendo"		
   fi
 }
 
@@ -61,10 +66,10 @@ function validarArchivos {
   # Si hay archivos Recibidos a procesar, invoco a feprima
   cantRecibidos=`expr $(ls $PATH_FACT_RECIBIDAS | wc -w)`
   if [ $cantRecibidos -gt 0 ]; then
+    echo "FEPONIO - Se econtraron archivos recibidos"
     invocarFeprima
-    echo "se econtraron archivos recibidos!!!"
   else
-    echo "NO se econtraron archivos recibidos!!!"
+    echo "FEPONIO - No se econtraron archivos recibidos"
   fi
 }
 
@@ -80,22 +85,25 @@ if [ $GRUPO ]; then
 
   if [ $cant -eq 3 ]; then
     #no se esta ejecutando
-    returncode=1
+    returncode=$OK
   else
     #ya se esta ejecutando
-    echo "Ya se está ejecutando el demonio."
+    returncode=$DEMONIO_YA_ESTA_CORRIENDO
+    echo "FEPONIO - Ya se está ejecutando el demonio."
   fi
 
 else
   #no se inicializo el ambiente
-  echo "Debe inicializar el ambiente primero."
+  echo "FEPONIO - Debe inicializar el ambiente primero."
 fi
 
 #si el ambiente esta inicializado => ejecuto el demonio
-if [ $returncode -eq 1 ]; then
+if [ $returncode -eq $OK ]; then
   while [ true ] 
   do
     validarArchivos
-    sleep $tmpespera
+    sleep $TMRESPERA
   done
 fi
+
+exit $returncode

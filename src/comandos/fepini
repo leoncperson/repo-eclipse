@@ -1,6 +1,15 @@
 #!/bin/bash
 
-returncode=0
+#Codigos de Retorno
+OK=0
+PERL_NO_INSTALADO=1
+AMBIENTE_YA_INICILIZADO=2
+ARCHIVO_PROV_NO_EXISTE=3
+ARCHIVO_PRESUP_NO_EXISTE=4
+DEMONIO_YA_ESTA_CORRIENDO=5
+
+#inicializo el codigo de retorno
+returncode=$OK
 
 # ---------------------
 # -- Checkeo de grupo --
@@ -25,15 +34,15 @@ if [ $version -lt 5 ]; then
 	echo "Efectue la instalacion de Perl"
 	echo "e inicie nuevamente el procedimiento de instalacion."
 	echo ""
-	returncode=1
+	returncode=$PERL_NO_INSTALADO
 else
-	echo "Perl esta instalado correctamente"
+	echo "FEPINI - Perl esta instalado correctamente"
 fi
 
-if [ $returncode -eq 0 ]; then
+if [ $returncode -eq $OK ]; then
    if [ $GRUPO ]; then
-      echo "La variable grupo ya está inicializada con el valor:  $GRUPO"
-      returncode=2
+      echo "FEPINI - La variable grupo ya está inicializada con el valor:  $GRUPO"
+      returncode=$AMBIENTE_YA_INICILIZADO
    else
       #seteo el directorio del tp
       GRUPO="/home/drmk/facultad/7508/tp/src"
@@ -59,25 +68,25 @@ PATH_COMANDOS="$GRUPO/comandos"
 
 cant=`expr $(ls $PATH_ARCH_MAEPRO | wc -w)`
 
-if [ $returncode -eq 0 ]; then
+if [ $returncode -eq $OK ]; then
    if [ $cant -eq 0 ]; then
-      echo "Inicializacion de ambiente no fie exitosa. El archivo maestro de proveedores no existe"
+      echo "FEPINI - Inicializacion de ambiente no fue exitosa. El archivo maestro de proveedores no existe"
       GRUPO=""
-      returncode=3
+      returncode=$ARCHIVO_PROV_NO_EXISTE
    fi
 fi
 
 cant=`expr $(ls $PATH_ARCH_PRESU | wc -w)`
 
-if [ $returncode -eq 0 ]; then
+if [ $returncode -eq $OK ]; then
    if [ $cant -eq 0 ]; then
-      echo "Inicializacion de ambiente no fie exitosa. El archivo de presupuesto no existe"
+      echo "FEPINI - Inicializacion de ambiente no fie exitosa. El archivo de presupuesto no existe"
       GRUPO=""
-      returncode=4 
+      returncode=$ARCHIVO_PRESUP_NO_EXISTE
    fi
 fi
 
-if [ $returncode -eq 0 ]; then
+if [ $returncode -eq $OK ]; then
    echo "**********************************************************"
    echo "*           Inicialización de Ambiente Concluída         *"
    echo "*                        Ambiente                        *"
@@ -116,7 +125,7 @@ if [ $returncode -eq 0 ]; then
    export PATH_COMANDOS
 fi
 
-if [ $returncode -eq 0 ]; then
+if [ $returncode -eq $OK ]; then
     cant=`expr $(ps -ef | grep "feponio" | grep $USER | grep -v grep | wc -l)`
     if [ $cant -eq 0 ]; then
 #      echo "No se encuentra feponio corriendo."
@@ -126,11 +135,13 @@ if [ $returncode -eq 0 ]; then
       ps -ef | grep "feponio" | grep $USER | grep -v grep | while read a b c
       do
          echo "----------------------------------------------------------"
-         echo " Demonio corriendo bajo el no: $b"
+         echo " FEPINI - Demonio corriendo bajo el no: $b"
          echo "----------------------------------------------------------"
       done
    else 
-      echo "Inicializacion de ambiente no fue exitosa. El demonio feponio se encuentra corriendo."
-      returncode=5
+      echo "FEPINI - Inicializacion de ambiente no fue exitosa. El demonio feponio se encuentra corriendo."
+      returncode=$DEMONIO_YA_ESTA_CORRIENDO
    fi
 fi
+
+exit $returncode
