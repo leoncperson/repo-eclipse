@@ -115,52 +115,85 @@ if [ $cant -eq 3 ]; then
 	      echo "FEPRIMA - Detalle a validar: $linea"
 	      val=`echo "$linea" | sed "s/^[^;];\([0-9]\{2\}\.[0-9]\{2\};\)\{2\}[0-9]\{2\}\.[0-9]\{2\}\$/1/"
 
-              if [ "$val" = "$VAL_OK" ]; then
-                echo "FEPRIMA - Formato de registro correcto"
-		#obtengo los montos
-                precio=`$(echo $linea | sed "s/^[^;];\([0-9]\{2\}\.[0-9]\{2\}\);.*$/\1/" | bc)`
-                tasaIVA=`$(echo $linea | sed "s/^[^;];[^;];\([0-9]\{2\}\.[0-9]\{2\}\);.*$/\1/" | bc)`
-                montoIVA=`$(echo $linea | sed "s/^[^;];[^;];[^;];\([0-9]\{2\}\.[0-9]\{2\}\)$/\1/" | bc)`
+            
 
-                #Valido que los montos sean > 0
-		valPrecio=`$(echo "$precio > 0" | bc)`
-		valTasaIVA=`$(echo "$tasaIVA > 0" | bc)`
-		valMontoIVA=`$(echo "$montoIVA > 0" | bc)`
-      
-	        if [ $valPrecio -eq 1 -a $valTasaIVA -eq 1 -a $valMontoIVA -eq 1 ]; then
-	          echo "FEPRIMA - Los montos son validos"
-	          #Valido MontoIVAItem  = MontoItem * TasaIVAItem /100
-	          val=$VAL_OK
-	          montoIvaItemAux=$(echo "$precio*$tasaIVA/100" | bc)
-	          if [ $(echo "$montoIVAItemAux = $montoIVA" | bc) -eq 1 ]; then
-                    echo "FEPRIMA - MontoIVAItem correcto"
-                    val=$VAL_OK
-                    #actualizo los totales de la factura
-	            montoIVAItem=$(echo "$montoIVAItem+$montoIVA" | bc)
-                    if [ $tasaIVA -eq 0.0 ]; then
-                      #Producto no gravado
-   	              montoItemNoGravados=$(echo "$montoItemNoGravados+$precio" | bc)
-   	            else
-   	              #Producto gravado
-               	      montoItemGravados=$(echo "$montoItemGravados+$precio" | bc)
-                    fi
-	          else
-                    echo "FEPRIMA - MontoIVAItem incorrecto"
-                    val=$VAL_ERROR
-	          fi
-	        else
-                  echo "FEPRIMA - Alguno de los montos es invalido (es igual a 00.00)"
-	          val=$VAL_ERROR
-	        fi
-              else
-                echo "FEPRIMA - Formato del registro detalle incorrecto"
-                val=$VAL_ERROR
-              fi
+##########################################################################################
+##########################################################################################
+######          DESDE  ACA  LO QUE ARREGLO NAHUEL                #########################
+##########################################################################################
+	
+              if [ `expr $(echo "$val == $VAL_OK" | bc)` -eq 1 ]; then
+		echo ""
+		echo "#################################################"	
+		echo "##    FEPRIMA - Formato de registro correcto   ##"
+		echo "#################################################"	
+		echo ""	
+	      
+		sumaMontoItemGravado=0
+		sumaMontoItemNoGravado=0
+
+		precio=`echo $linea | sed "s/^[^;]*;\([^;]*\);.*$/\1/"`
+		tasaIVA=`echo $linea | sed "s/^[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
+		montoIVA=`echo $linea | sed "s/^[^;]*;[^;]*;[^;]*;\([^;]*\)$/\1/"`
+
+		#Valido que los montos sean > 0
+		valPrecio=`expr $(echo "$precio >= 0" | bc)`
+		valTasaIVA=`expr $(echo "$tasaIVA >= 0" | bc)`
+		valMontoIVA=`expr $(echo "$montoIVA >= 0" | bc)`
+
+		if [ $valPrecio -eq 1 -a $valTasaIVA -eq 1 -a $valMontoIVA -eq 1 ]; then
+			echo ""
+			echo "###########################################"	
+			echo "##    FEPRIMA - Los montos son validos   ##"
+			echo "###########################################"	
+			echo ""	
+			#Valido MontoIVAItem  = MontoItem * TasaIVAItem /100
+			val=$VAL_OK
+			montoIvaItemAux=`echo $precio*$tasaIVA*0.01 | bc`
+	
+			if [ `expr $(echo "$montoIvaItemAux == $montoIVA" | bc)` -eq 1 ]; then
+				    echo ""
+				    echo "###########################################"
+				    echo "##    FEPRIMA - MontoIVAItem correcto    ##"
+				    echo "###########################################" 
+				    echo ""
+				    val=$VAL_OK
+				    #actualizo los totales de la factura
+			
+				    if [ $tasaIVA == 0.00 ]; then
+				      #Producto no gravado
+		   	              sumaMontoItemNoGravado=`echo $sumaMontoItemNoGravado+$precio | bc`
+		   	            else
+		   	              #Producto gravado
+			       	      sumaMontoItemGravado=`echo $sumaMontoItemGravado+$precio | bc`
+				    fi
+			else
+				    echo ""
+				    echo "###########################################"
+				    echo "##   FEPRIMA - MontoIVAItem incorrecto   ##"
+				    echo "###########################################"
+				    echo ""
+				    val=$VAL_ERROR
+			fi
+		else
+			echo ""
+			echo "#####################################################################"
+			echo "##  FEPRIMA - Alguno de los montos es invalido (es igual a 00.00)  ##"
+			echo "#####################################################################"	
+			echo ""
+			val=$VAL_ERROR
+		fi
+
+	      fi
              
 	      #verifico si todas las validaciones dieron ok
 	      if [ "$val" = "$VAL_OK" ]; then
 		#Regsitro detalle valido
-		echo "FEPRIMA - registro detalle valido"
+		echo ""
+		echo "#########################################"
+		echo "##  FEPRIMA - registro detalle valido  ##"
+		echo "#########################################"	
+		echo ""
 	      else
 	        #archivo con errores en detalle
                 glog "feprima" "Factura Erronea en registro de Item: $archivo" "E"
@@ -169,38 +202,67 @@ if [ $cant -eq 3 ]; then
 	      fi
 	    fi
 	  done
-	  if [ val = $VAL_OK ]; then
+	  
+	if [ `expr $(echo "$val == $VAL_OK" | bc)` -eq 1 ]; then
             #------------------
   	    #Valido los totales
             #------------------
-	    valMontoGravado=`$(echo "$importeGravado != $montoItemGravados" | bc)`
-            if [ $valMontoGravado -eq 1 ]; then
-              echo "FEPRIMA - La suma de los MontoItem gravados es correcta (coincide con ImporteGravado de la cabecera)" 
+	    valMontoGravado=`echo "$importeGravado == $montoItemGravados" | bc`
+	    if [ $valMontoGravado -eq 1 ]; then
+	      echo ""
+	      echo "############################################################################################################"
+              echo "##  FEPRIMA - La suma de los MontoItem gravados es correcta (coincide con ImporteGravado de la cabecera)  ##"
+	      echo "############################################################################################################"	
+	      echo ""
               val=$VAL_OK
-	      valMontoNoGravado=`$(echo "$importeNoGravado != $montoItemNoGravados" | bc)`
+	      valMontoNoGravado=`echo "$importeNoGravado == $montoItemNoGravados" | bc`
               if [ $valMontoNoGravado -eq 1 ]; then
-                echo "FEPRIMA - La suma de los MontoItem no gravados es correecta (coincide con ImporteNoGravado de la cabecera)" 
+                echo ""
+	      	echo "##################################################################################################################"
+             	echo "##  FEPRIMA - La suma de los MontoItem no gravados es correecta (coincide con ImporteNoGravado de la cabecera)  ##"
+	      	echo "##################################################################################################################"	
+	      	echo ""
                 val=$VAL_OK
-		valMontoIVAItem=`$(echo "$importeTributoIVA != $montoIVAItem" | bc)`
+		valMontoIVAItem=`echo "$importeTributoIVA == $montoIVAItem" | bc`
                 if [ $valMontoIVAItem -eq 1 ]; then
-                  echo "FEPRIMA - La suma de los montoIVAItem es correcta (coincide con ImporteTributoIVA de la cabecera)" 
+                  echo ""
+	      	  echo "#########################################################################################################"
+             	  echo "##  FEPRIMA - La suma de los montoIVAItem es correcta (coincide con ImporteTributoIVA de la cabecera)  ##"
+	      	  echo "#########################################################################################################"	
+	      	  echo ""
                   val=$VAL_OK
                 else
-                  echo "FEPRIMA - La suma de los montoIVAItem no coincide con ImporteTributoIVA de la cabecera" 
+		  echo ""
+	      	  echo "##############################################################################################"
+             	  echo "##  FEPRIMA - La suma de los montoIVAItem no coincide con ImporteTributoIVA de la cabecera  ##"
+	      	  echo "##############################################################################################"	
+	      	  echo ""	
                   val=$VAL_ERROR
                   glog "feprima" "Factura Erronea no coinciden los totales: $archivo" "E"
                 fi
               else
-                echo "FEPRIMA - La suma de los MontoItem no gravados no coincide con ImporteNoGravado de la cabecera" 
+		echo ""
+	      	echo "######################################################################################################"
+           	echo "##  FEPRIMA - La suma de los MontoItem no gravados no coincide con ImporteNoGravado de la cabecera  ##"
+	        echo "######################################################################################################"	
+	      	echo ""                
                 val=$VAL_ERROR
                 glog "feprima" "Factura Erronea no coinciden los totales: $archivo" "E"
               fi
             else
-              echo "FEPRIMA - La suma de los MontoItem gravados no coincide con ImporteGravado de la cabecera" 
+              echo ""
+	      echo "##################################################################################################"
+              echo "##  FEPRIMA - La suma de los MontoItem gravados no coincide con ImporteGravado de la cabecera   ##"
+	      echo "##################################################################################################"	
+	      echo ""
               val=$VAL_ERROR
               glog "feprima" "Factura Erronea no coinciden los totales: $archivo" "E"
             fi
 	  fi
+
+##########################    HASTA ACA LO QUE ARREGLO NAHUEL      ################################
+###################################################################################################
+
           #Verifico si todas las validaciones dieron OK
           if [ "$val" = "$VAL_OK" ]; then
           
