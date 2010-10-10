@@ -3,6 +3,7 @@
 #Codigos de Retorno
 OK=0
 DEMONIO_YA_ESTA_CORRIENDO=1
+AMBIENTE_NO_INCIALIZADO=2
 
 # Variable utilizada como código de retorno
 returncode=$OK
@@ -24,10 +25,12 @@ function invocarFeprima {
     # Obtengo el process id para mostrarlo por pantalla
     ps -ef | grep "feprima" | grep $USER | grep -v grep | while read a b c
     do
+      echo ""
       echo "FEPONIO - Se inicio feprima con proceso ID: $b"
     done
   else
     # Ya se estaba ejecutando
+    echo ""
     echo "FEPONIO - No se puede iniciar feprima pues ya está el proceso corriendo"		
   fi
 }
@@ -66,9 +69,12 @@ function validarArchivos {
   # Si hay archivos Recibidos a procesar, invoco a feprima
   cantRecibidos=`expr $(ls $PATH_FACT_RECIBIDAS | wc -w)`
   if [ $cantRecibidos -gt 0 ]; then
+    echo ""
     echo "FEPONIO - Se econtraron archivos recibidos"
-    invocarFeprima
+    #invocarFeprima
+    feprima
   else
+    echo ""
     echo "FEPONIO - No se econtraron archivos recibidos"
   fi
 }
@@ -89,11 +95,14 @@ if [ $GRUPO ]; then
   else
     #ya se esta ejecutando
     returncode=$DEMONIO_YA_ESTA_CORRIENDO
+    echo ""
     echo "FEPONIO - Ya se está ejecutando el demonio."
   fi
 
 else
   #no se inicializo el ambiente
+  returncode=$AMBIENTE_NO_INCIALIZADO
+  echo ""
   echo "FEPONIO - Debe inicializar el ambiente primero."
 fi
 

@@ -14,6 +14,7 @@ returncode=$OK
 # ---------------------
 # -- Checkeo de grupo --
 # ---------------------
+echo ""
 echo "Verificando que Perl este instalado..."
 vperl=`/usr/bin/perl -v`
 vp1=`echo ${vperl#*[Vv]}`
@@ -41,6 +42,7 @@ fi
 
 if [ $returncode -eq $OK ]; then
    if [ $GRUPO ]; then
+      echo ""
       echo "FEPINI - La variable grupo ya está inicializada con el valor:  $GRUPO"
       returncode=$AMBIENTE_YA_INICILIZADO
    else
@@ -70,6 +72,7 @@ cant=`expr $(ls $PATH_ARCH_MAEPRO | wc -w)`
 
 if [ $returncode -eq $OK ]; then
    if [ $cant -eq 0 ]; then
+      echo ""
       echo "FEPINI - Inicializacion de ambiente no fue exitosa. El archivo maestro de proveedores no existe"
       GRUPO=""
       returncode=$ARCHIVO_PROV_NO_EXISTE
@@ -80,6 +83,7 @@ cant=`expr $(ls $PATH_ARCH_PRESU | wc -w)`
 
 if [ $returncode -eq $OK ]; then
    if [ $cant -eq 0 ]; then
+      echo ""
       echo "FEPINI - Inicializacion de ambiente no fie exitosa. El archivo de presupuesto no existe"
       GRUPO=""
       returncode=$ARCHIVO_PRESUP_NO_EXISTE
@@ -87,6 +91,7 @@ if [ $returncode -eq $OK ]; then
 fi
 
 if [ $returncode -eq $OK ]; then
+   echo ""
    echo "**********************************************************"
    echo "*           Inicialización de Ambiente Concluída         *"
    echo "*                        Ambiente                        *"
@@ -134,11 +139,13 @@ if [ $returncode -eq $OK ]; then
       sleep 1
       ps -ef | grep "feponio" | grep $USER | grep -v grep | while read a b c
       do
+	 echo ""
          echo "----------------------------------------------------------"
          echo " FEPINI - Demonio corriendo bajo el no: $b"
          echo "----------------------------------------------------------"
       done
    else 
+      echo ""
       echo "FEPINI - Inicializacion de ambiente no fue exitosa. El demonio feponio se encuentra corriendo."
       returncode=$DEMONIO_YA_ESTA_CORRIENDO
    fi
