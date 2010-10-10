@@ -14,11 +14,8 @@ VAR_ERROR="0"
 returncode=$OK
 
 #verifico si feprima se esta ejecutando
-#----------------------------------
-# TODO: Volver a poner ESTO!!!!
-#----------------------------------
-#cant=`expr $(ps -ef | grep "feprima" | grep $USER | grep -v grep | wc -l)`
-cant=3
+cant=`expr $(ps -ef | grep "feprima" | grep $USER | grep -v grep | wc -l)`
+#cant=3
 # Si no se esta ejecutando feprima.
 if [ $cant -eq 3 ]; then
 
