@@ -1,0 +1,113 @@
+#!/bin/bash
+MSG="./glog"                 #Nombre del script que imprime mensajes en archivo de log
+function existeFepago
+{
+	#ver si existe otro fepago corriendo
+	CNTPROC=`ps -a | grep -c fepago`
+	CURRENTPID=0
+#	obtenerPID
+#	echo "is $CURRENTPID"
+#	echo $CNTPROC
+#	PID=`ps -e | grep -c "fefago"`
+	#Si se encuentra que se ha ejecutado.
+	if [ $CNTPROC -gt 2 ]; then
+#	if [ -n "$PID" ]; then
+		$MSG $PWD/log/"fepago" "Se ha encontrado una instancia previa del programa" "E"
+		exit 1
+	fi
+
+}
+
+
+function obtenerPID
+{
+	ps x > auxiliar.txt
+ 	export GREP_OPTIONS="--color=always"
+	RES=`grep "bash $1" auxiliar.txt|cut -f2 -d" "`
+	cat auxiliar.txt
+	echo $RES
+	PID=`grep "bash $1" auxiliar.txt|cut -f2 -d" "`
+	#echo $1
+	rm auxiliar.txt
+
+	if [ -n $PID ] ; then
+		CURRENTPID=$PID
+		#echo $PID # Muestra el PID por stdout
+	fi
+}
+function checkParametros
+{
+	#se graba en el log
+	$MSG $PWD/log/"fepago" "Inicio de fepago: $1 $2" "I"
+	if [ -z $1 ] ; then
+		$MSG $PWD/log/"fepago" "Error en cantidad de argumentos" "E"
+		exit 0
+	fi
+	if [ -z $2 ] ; then
+		$MSG $PWD/log/"fepago" "Error en cantidad de argumentos" "E"
+		exit 0
+	fi
+	if [ -z $3 ] ; then
+		$MSG $PWD/log/"fepago" "Error en cantidad de argumentos" "E"
+		exit 0
+	fi
+}
+function validParametros
+{
+	fechaDesde=$1
+	montoDesde=$1
+	fechaHasta=$2
+	montoHasta=$2
+	modo=$3
+	sim="simulacion"
+	ejec="ejecucion"
+	#valida el modo, solo 2 valores posibles
+	if [ "$modo" != "$sim" ] && [ "$modo" != "$ejec" ] 
+	then
+		echo ERROR2
+		$MSG $PWD/log/"fepago" "Error tipo de modo" "E"
+		return 1
+	else
+		echo OK2
+	fi
+	if ! fechaValida_AAAAMMDD "$fechaDesde"; then
+		echo ERROR4
+		return 0
+	fi
+}
+
+
+fechaValida_AAAAMMDD()
+{
+	
+	CONTROL_ANIO_COTA_VALIDA='2050'
+	#checkargc fechaValida $# 1
+	if [ `strlen $1` -ne 8 ]; then
+		return 1
+	fi	
+	local anio=`echo "$1" | cut -c1-4`
+	local mes=`echo "$1" | cut -c6-7`
+	local dia=`echo "$1" | cut -c9-10`
+	if [ $anio -lt $CONTROL_ANIO_COTA_VALIDA ]; then
+		return 1
+	fi
+	if [ $mes -lt 1 -o $mes -gt 12 ]; then
+		return 1
+	fi
+	if [ $dia -gt 31 -o $dia -lt 1 ]; then
+		return 1
+	fi
+}
+
+#principal
+#existeFepago
+#read N
+#mostrarPid
+#controla si existe fepago
+existeFepago
+#recibe [fechaDesde] [fechaHasta] [modo]
+#recibe [montoDesde] [montoHasta] [modo]
+#recibe [fechaDesde] [fechaHasta] [modo]
+checkParametros $1 $2 $3
+validParametros $1 $2 $3
+#
