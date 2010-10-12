@@ -39,6 +39,7 @@ if [ $version -lt 5 ]; then
 else
 	echo "FEPINI - Perl esta instalado correctamente"
 fi
+CURRDIR=$PWD
 
 if [ $returncode -eq $OK ]; then
    if [ $GRUPO ]; then
@@ -47,7 +48,8 @@ if [ $returncode -eq $OK ]; then
       returncode=$AMBIENTE_YA_INICILIZADO
    else
       #seteo el directorio del tp
-      GRUPO="/home/drmk/facultad/7508/tp/src"
+#      GRUPO="/home/drmk/facultad/7508/tp/src"
+	GRUPO="$CURRDIR/../"
    fi
 fi
 
