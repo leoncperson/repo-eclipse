@@ -133,19 +133,16 @@ if [ $returncode -eq $OK ]; then
 fi
 
 if [ $returncode -eq $OK ]; then
-    cant=`expr $(ps -ef | grep "feponio" | grep $USER | grep -v grep | wc -l)`
+    cant=`expr $(ps -eo args | grep "feponio" | grep $USER | grep -v "startfeponio" | grep -v "stopfeponio" | grep -v grep | wc -l)`
     if [ $cant -eq 0 ]; then
 #      echo "No se encuentra feponio corriendo."
       #Iniciamos el demonio
       startfeponio
-	  sleep 1
-      ps -ef | grep "feponio" | grep $USER | grep -v grep | while read a b c
-      do
-	 echo ""
-         echo "----------------------------------------------------------"
-         echo " FEPINI - Demonio corriendo bajo el no: $b"
-         echo "----------------------------------------------------------"
-      done
+
+		pid="$(ps -eo pid,args | grep "feponio" | grep -v "startfeponio" | grep -v "stopfeponio" | grep -v grep | cut -c1-6)"
+		echo "----------------------------------------------------------"
+		echo " FEPINI - Demonio corriendo bajo el no: $pid"
+		echo "----------------------------------------------------------"
    else 
       echo ""
       echo "FEPINI - Inicializacion de ambiente no fue exitosa. El demonio feponio se encuentra corriendo."
@@ -153,4 +150,4 @@ if [ $returncode -eq $OK ]; then
    fi
 fi
 
-exit $returncode
+ # exit $returncode
