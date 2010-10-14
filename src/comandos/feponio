@@ -9,7 +9,7 @@ AMBIENTE_NO_INCIALIZADO=2
 returncode=$OK
 
 #Tiempo de espera del thread del demonio. En milisegundos
-TMRESPERA=1
+TMRESPERA=3
 
 #----------------------------------------------------------------------------------------
 #Funcion que verfica si feprima se esta ejecutando, de no ser asi, lo ejecuta.
