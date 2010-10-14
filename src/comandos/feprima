@@ -1,5 +1,5 @@
 #!/bin/bash
-
+sleep 1
 #Valores de Retorno
 OK=0
 FEPRIMA_YA_INICIADO=1
@@ -14,10 +14,11 @@ VAR_ERROR="0"
 returncode=$OK
 
 #verifico si feprima se esta ejecutando
-cant=`expr $(ps -ef | grep "feprima" | grep $USER | grep -v grep | wc -l)`
-#cant=3
+ # ps -eo args | grep "feprima" | grep -v grep
+ cant=`expr $(ps -eo args | grep "feprima" | grep -v grep | wc -l)` 
 # Si no se esta ejecutando feprima.
 if [ $cant -eq 3 ]; then
+	# Obtengo el process id para mostrarlo por pantalla
 
 	#Verifico que el ambiente se encuentre incializado
 	if [ $GRUPO ]; then
@@ -88,14 +89,14 @@ if [ $cant -eq 3 ]; then
 
 								#valido numeroPuntoVenta
 								nroPuntoVenta=`echo "$linea" | sed "s/^[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
-								valPuntoVenta=`echo "$nroPuntoVenta > 0 && $nroPuntoVenta < 9999" | bc`
+								valPuntoVenta=`expr $(echo "$nroPuntoVenta > 0 && $nroPuntoVenta < 9999" | bc)`
 								if [ $valPuntoVenta -eq 1 ]; then
 									echo ""
 									echo "FEPRIMA - nroPuntoVenta: $nroPuntoVenta valido"
 
 									#valido el nroComprobante
 									nroComprobante=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
-									valNroComprobante=`echo "$nroComprobante > 0 && $nroComprobante < 99999999" | bc`
+									valNroComprobante=`expr $(echo "$nroComprobante > 0 && $nroComprobante < 99999999" | bc)`
 									if [ $valNroComprobante -eq 1 ]; then
 										echo ""
 										echo "FEPRIMA - nroComprobante: $nroComprobante valido"
@@ -353,7 +354,7 @@ if [ $cant -eq 3 ]; then
 			echo "FEPRIMA - Fin de FEPRIMA"
 		else 
 			echo ""
-			echo "FEPRIMA - no hay archivos para procesar en $PATH_FACT_ACEPTADAS"
+			echo "FEPRIMA - no hay archivos para procesar en $PATH_FACT_RECIBIDAS"
 			returncode=$NO_HAY_ARCHIVOS
 		fi
 	else

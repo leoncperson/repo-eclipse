@@ -9,7 +9,7 @@ AMBIENTE_NO_INCIALIZADO=2
 returncode=$OK
 
 #Tiempo de espera del thread del demonio. En milisegundos
-TMRESPERA=3
+TMRESPERA=1
 
 #----------------------------------------------------------------------------------------
 #Funcion que verfica si feprima se esta ejecutando, de no ser asi, lo ejecuta.
@@ -17,17 +17,13 @@ TMRESPERA=3
 function invocarFeprima {
   #ya tuve que haber verificado que habia archivos
   # Verifico que se este ejecutando.
-  cant=`expr $(ps -ef | grep "feprima" | grep $USER | grep -v grep | wc -l)`
-
+  cant=`expr $(ps -eo args | grep "feprima" | grep -v grep | wc -l)`
   # Si no se esta ejecutando feprima, lo invoco.
   if [ $cant -eq 0 ]; then
-    feprima
-    # Obtengo el process id para mostrarlo por pantalla
-    ps -ef | grep "feprima" | grep $USER | grep -v grep | while read a b c
-    do
-      echo ""
-      echo "FEPONIO - Se inicio feprima con proceso ID: $b"
-    done
+    feprima &
+	pid="$(ps -eo pid,args | grep "feprima" | grep -v grep | cut -c1-6)"
+	echo ""
+	echo "FEPONIO - Se inicio feprima con proceso ID: $pid"	
   else
     # Ya se estaba ejecutando
     echo ""
@@ -50,7 +46,7 @@ function validarArchivos {
     archivoValido=0
 
     # Para cada nombre de archivo, verifico su formato (14 digitos).
-    formatoValido=`echo $nombreArchivo | grep ^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$`    
+    formatoValido=`echo $nombreArchivo | grep "^[0-9]\{14\}$"`    
 
     if [ "$formatoValido" = "$nombreArchivo" ]; then
       archivoValido=1
@@ -69,26 +65,26 @@ function validarArchivos {
   # Si hay archivos Recibidos a procesar, invoco a feprima
   cantRecibidos=`expr $(ls $PATH_FACT_RECIBIDAS | wc -w)`
   if [ $cantRecibidos -gt 0 ]; then
-    echo ""
-    echo "FEPONIO - Se econtraron archivos recibidos"
-    #invocarFeprima
-    feprima
+#    echo ""
+#    echo "FEPONIO - Se econtraron archivos recibidos en $PATH_FACT_RECIBIDAS"
+    invocarFeprima
+#    feprima
   else
     echo ""
-    echo "FEPONIO - No se econtraron archivos recibidos"
+    echo "FEPONIO - No se econtraron archivos recibidos en $PATH_FACT_RECIBIDAS"
   fi
 }
 
 #----------------------------------------------------------------------------------------------
 # demonio
 #----------------------------------------------------------------------------------------------
+sleep 1
 # Lo verifico si el ambiente esta incializado
 if [ $GRUPO ]; then
   #se inicializo el ambiente.
 
   #verifico que no haya otro demonio corriendo
-  cant=`expr $(ps -ef | grep "feponio" | grep $USER | grep -v "startfeponio" | grep -v "stopfeponio" | grep -v grep | wc -l)`
-
+  cant=`expr $(ps -eo args | grep "feponio" | grep -v "startfeponio" | grep -v "stopfeponio" | grep -v grep | wc -l)`
   if [ $cant -eq 3 ]; then
     #no se esta ejecutando
     returncode=$OK
