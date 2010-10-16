@@ -17,36 +17,49 @@ returncode=$OK
  # ps -eo args | grep "feprima" | grep -v grep
  cant=`expr $(ps -eo args | grep "feprima" | grep -v grep | wc -l)` 
 # Si no se esta ejecutando feprima.
+echo ""
+echo "CANT: $cant"
+echo " ------------------------------------------------------------------------------------------"
+echo "|"
+echo "|"
+echo "| --------------------------------------------- "
+echo "| 	EJECUTANDO EL PROCESO FEPRIMA			 |"
+echo "|---------------------------------------------- "
+echo "|"
 if [ $cant -eq 3 ]; then
 	# Obtengo el process id para mostrarlo por pantalla
 
 	#Verifico que el ambiente se encuentre incializado
 	if [ $GRUPO ]; then
-		echo ""
-		echo "FEPRIMA - El ambiente esta incializado correctamente"
+		echo "|"
+		echo "| FEPRIMA - El ambiente esta incializado correctamente "
+		echo "|"
 		#Obtengo al cantidad de archivos a procesar
 		cant=`expr $(ls $PATH_FACT_RECIBIDAS 2>/dev/null | wc -l)`
 		#Si la cantidad de archivos > 0 => recorro y valido los archivos
 		if [ $cant -gt 0 ]; then
-			echo ""
-			echo "FEPRIMA - Hay $cant archivos en el directorio $PATH_FACT_RECIBIDAS"
-
+			echo "|"
+			echo "| FEPRIMA - Hay $cant archivos en el directorio $PATH_FACT_RECIBIDAS |"
+			echo "|"
 			#Inicializo el archivo de log
 			glog "feprima" "Inicio de feprima $cant" "I"
-			echo ""
-			echo "FEPRIMA - INICIO DE FEPRIMA (cant. archivos: $cant)"
+			echo "|"
+			echo "| FEPRIMA - INICIO DE FEPRIMA (cant. archivos: $cant) "
+			echo "|"
 
 			#Recorro todos los archivos del directorio de facturas recibidas
 			for archivo in `ls $PATH_FACT_RECIBIDAS 2>/dev/null`
 			do
 				glog "feprima" "Archivo a procesar: $archivo" "I"
-				echo ""
-				echo "FEPRIMA - Archivo a procesar: $archivo"
+				echo "|"
+				echo "| FEPRIMA - Archivo a procesar: $archivo "
+				echo "|"
 				#Verifico que no sea un CAE duplicado
 				cant=`expr $(ls $PATH_FACT_ACEPTADAS/$archivo 2>/dev/null| wc -l)`
 				if [ $cant -eq 0 ]; then
-					echo ""
-					echo "FEPRIMA - El archivo $archivo no esta duplicado"
+					echo "|"
+					echo "| FEPRIMA - El archivo $archivo no esta duplicado "
+					echo "|"
 					let nroLinea=0
 
 					#Totales del encabezado
@@ -68,241 +81,322 @@ if [ $cant -eq 3 ]; then
 					#defino el separador de linea
 					IFS="
 					"
-					#El archivo no esta duplicado => recorro y valido el archivo
-					for linea in $(cat $PATH_FACT_RECIBIDAS/$archivo)
-					do
-						val=$VAL_ERROR
-						let nroLinea=$nroLinea+1
-						#Si estoy en el registro cabecera
-						if [ $nroLinea -eq 1 ]; then
-							#---------------------------
-							#Valido el registro cabecera
-							#---------------------------
-							#Valido el formato del registro cabecera
-							echo ""
-							echo "FEPRIMA - Cabecera a validar: $linea"
-							val=`echo "$linea" | sed "s/^[0-9]\{11\};[ABCE];[0-9]\{4\};[0-9]\{8\};\([0-9]\{4\}-[0-1][0-9]-[0-3][0-9];\)\{2\}\([0-9]*\.[0-9]\{2\};\)\{3\}[0-9]*\.[0-9]\{2\}$/1/"`
+						
+					#Valido si el archivo tiene al menos dos lineas (una cabecera y un detalle)
+					cantLineas=`expr $(cat $PATH_FACT_RECIBIDAS/$archivo | wc -l)`
+#					echo LINEAS: $cantLineas
+					valCantLineas=`echo "$cantLineas >= 2" | bc`
+#					echo VAL_LINEAS: $valCantLineas
+					if [ $valCantLineas -eq 1 ]; then
+						#El archivo no esta duplicado => recorro y valido el archivo
+						for linea in $(cat $PATH_FACT_RECIBIDAS/$archivo)
+						do
+							val=$VAL_ERROR
+							let nroLinea=$nroLinea+1
+							#Si estoy en el registro cabecera
+							if [ $nroLinea -eq 1 ]; then
+								#---------------------------
+								#Valido el registro cabecera
+								#---------------------------
+								#Valido el formato del registro cabecera
+								echo "|"
+								echo "|"								
+								echo "|"
+								echo "|"
+								echo "|           FEPRIMA - Validación de la Cabecera de la Factura"
+								echo "|           -------------------------------------------------"
+								echo "|"
+								echo "|"
+								echo "| FEPRIMA - Cabecera a validar: $linea "
+								echo "|"
+								val=`echo "$linea" | sed "s/^[0-9]\{11\};[ABCE];[0-9]\{4\};[0-9]\{8\};\([0-9]\{4\}-[0-1][0-9]-[0-3][0-9];\)\{2\}\([0-9]*\.[0-9]\{2\};\)\{3\}[0-9]*\.[0-9]\{2\}$/1/"`
 
-							if [ "$val = $VAL_OK" ]; then
-								echo ""
-								echo "FEPRIMA - Formato cabecera valido"
+								if [ "$val" = "$VAL_OK" ]; then
+									echo "|"
+									echo "| FEPRIMA - Formato cabecera valido "
+									echo "|"
 
-								#valido numeroPuntoVenta
-								nroPuntoVenta=`echo "$linea" | sed "s/^[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
-								valPuntoVenta=`expr $(echo "$nroPuntoVenta > 0 && $nroPuntoVenta < 9999" | bc)`
-								if [ $valPuntoVenta -eq 1 ]; then
-									echo ""
-									echo "FEPRIMA - nroPuntoVenta: $nroPuntoVenta valido"
+									#valido numeroPuntoVenta
+									nroPuntoVenta=`echo "$linea" | sed "s/^[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
+									valPuntoVenta=`expr $(echo "$nroPuntoVenta > 0 && $nroPuntoVenta < 9999" | bc)`
+									if [ $valPuntoVenta -eq 1 ]; then
+										echo "|"
+										echo "| FEPRIMA - nroPuntoVenta: "
+										echo "| $nroPuntoVenta "
+										echo "|"
 
-									#valido el nroComprobante
-									nroComprobante=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
-									valNroComprobante=`expr $(echo "$nroComprobante > 0 && $nroComprobante < 99999999" | bc)`
-									if [ $valNroComprobante -eq 1 ]; then
-										echo ""
-										echo "FEPRIMA - nroComprobante: $nroComprobante valido"
-										val=$VAL_OK
+										#valido el nroComprobante
+										nroComprobante=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
+										valNroComprobante=`expr $(echo "$nroComprobante > 0 && $nroComprobante < 99999999" | bc)`
+										if [ $valNroComprobante -eq 1 ]; then
+											echo "|"
+											echo "| FEPRIMA - nroComprobante: "
+											echo "| $nroComprobante "
+											echo "|"
+											val=$VAL_OK
 
-										#Valido que el proveedor existe en el archivo de proveedores
-										#Obtengo el CUIT del proveedor
-										cuit=`echo "$linea" | sed "s/^\([0-9]\{11\}\);.*/\1/"`
-										echo ""
-										echo "FEPRIMA - Buscando CUIT: $cuit en archivo de proveedores"
+											#Valido que el proveedor existe en el archivo de proveedores
+											#Obtengo el CUIT del proveedor
+											cuit=`echo "$linea" | sed "s/^\([0-9]\{11\}\);.*/\1/"`								
+											echo "|"
+											echo "| FEPRIMA - Buscando CUIT.. "
+											echo "|"
+											#Busco el CUIT en el archivo de proveedores
+											cant=`expr $(grep "^[^;]*;[^;]*;$cuit;" $PATH_ARCH_MAEPRO | wc -l)`
+											if [ $cant -gt 0 ]; then
+												echo "|"
+												echo "| FEPRIMA - Proveedor encontrado CUIT: $cuit "
+												echo "|"
 
-										#Busco el CUIT en el archivo de proveedores
-										cant=`expr $(grep "^[^;]*;[^;]*;$cuit;" $PATH_ARCH_MAEPRO | wc -l)`
-										if [ $cant -gt 0 ]; then
-											echo ""
-											echo "FEPRIMA - Proveedor encontrado CUIT: $cuit"
+												#Valido que el CAE no este vencido
+												fechaVencCAE=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
+												fechaAux=`echo "$fechaVencCAE" | sed "s/^\([0-9]\{4\}\)-\([0-9]\{2\}\)-\([0-9]\{2\}\)/\1\2\3/"`    
 
-											#Valido que el CAE no este vencido
-											fechaVencCAE=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
-											fechaAux=`echo "$fechaVencCAE" | sed "s/^\([0-9]\{4\}\)-\([0-9]\{2\}\)-\([0-9]\{2\}\)/\1\2\3/"`    
-
-											#valido fecha de vencimiento CAE mayor o igual a fecha actual
-											fecActual=`date +%s`
-											fecAux2=`date -d$fechaAux +%s`
-											let dif=$fecAux2-$fecActual
-											echo ""
-											echo "FEPRIMA - Validando la fecha de vencimiento CAE: $fechaVencCAE contra Fecha Actual"
-											if [ $dif -ge 0 ]; then
-												echo ""
-												echo "FEPRIMA - la fecha de venciento CAE: $fechaVencCAE es correcta"
-												val=$VAL_OK
+												#valido fecha de vencimiento CAE mayor o igual a fecha actual
+												fecActual=`date +%s`
+												fecAux2=`date -d$fechaAux +%s`
+												let dif=$fecAux2-$fecActual
+												echo "|"
+												echo "| FEPRIMA - Validando la fecha de vencimiento CAE: $fechaVencCAE contra Fecha Actual.."
+												echo "|"
+												if [ $dif -ge 0 ]; then
+													echo "|"
+													echo "| FEPRIMA - la fecha de venciento CAE: $fechaVencCAE es correcta "
+													echo "|"
+													val=$VAL_OK
+												else
+													echo "|"
+													echo "| FEPRIMA - Error: la fecha de vencimiento CAE: $fechaVencCAE es una fecha menor al dia de hoy"
+													echo "|"
+													val=$VAL_ERROR
+												fi
 											else
-												echo ""
-												echo "FEPRIMA - Error: la fecha de vencimiento CAE: $fechaVencCAE es una fecha menor al dia de hoy"
+												echo "|"
+												echo "| FEPRIMA - Error: No se encuentra el al proveedor en el archivo de proveedores con CUIT: $cuit "
+												echo "|"
 												val=$VAL_ERROR
 											fi
 										else
-											echo ""
-											echo "FEPRIMA - Error: No se encuentra el al proveedor en el archivo de proveedores con CUIT: $cuit"
+											echo "|"
+											echo "| FEPRIMA - nroComprobante: $nroComprobante invalido "
+											echo "|"
 											val=$VAL_ERROR
 										fi
 									else
-										echo ""
-										echo "FEPRIMA - nroComprobante: $nroComprobante invalido"
+										echo "|"
+										echo "| FEPRIMA - nroPuntoVenta: $nroPuntoVenta invalido "
+										echo "|"
 										val=$VAL_ERROR
 									fi
 								else
-									echo ""
-									echo "FEPRIMA - nroPuntoVenta: $nroPuntoVenta invalido"
+									echo "|"
+									echo "| FEPRIMA - Error: El formato de la cabecera es incorrecto"
+									echo "|"
 									val=$VAL_ERROR
 								fi
+
+								#verifico si todas las validaciones dieron ok
+								if [ "$val" = "$VAL_OK" ]; then
+									#Regsitro cabecera valido
+									echo "|"
+									echo "| FEPRIMA - Registro cabecera valido"
+									echo "|"
+									echo "|"
+									echo "|"
+									echo "|"
+									echo "|                  FEPRIMA - Validación de los Items de la Factura"
+									echo "|                  -----------------------------------------------"
+									echo "|"
+									importeGravado=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
+									importeNoGravado=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
+									importeTributoIVA=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
+									importeTotal=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\)/\1/"`
+
+									#Obtengo fechaEmision para garbar en el apagar.txt
+									fechaEmision=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
+								else
+									#graba el error en el log
+									glog "feprima" "Factura Erronea en registro cabecera: $archivo" "E"
+									echo "|"
+									echo "| FEPRIMA - Factura erronea en registro cabecera: $archivo "
+									echo "|"
+									#paso al siguiente archivo
+									break; 
+								fi
 							else
-								echo ""
-								echo "FEPRIMA - Error: El formato de la cabecera es incorrecto"
-								val=$VAL_ERROR
-							fi
+								#-----------------------------
+								#Valido el registro de detalle
+								#-----------------------------
+								#Valido el formato del registro de detalle
+								echo "|"								
+								echo "|"								
+								echo "|       FEPRIMA - Validando siguiente Item Factura "
+								echo "|       -------------------------------------------"								
+								echo "|"
+								echo "|"
+								echo "| FEPRIMA - Detalle a validar: $linea |"
+								echo "|"
+								val=`echo "$linea" | sed "s/^[^;]*;[0-9]*\.[0-9]\{2\};[0-9]*\.[0-9]\{2\};[0-9]*\.[0-9]\{2\}$/1/"`
 
-							#verifico si todas las validaciones dieron ok
-							if [ "$val" = "$VAL_OK" ]; then
-								#Regsitro cabecera valido
-								echo ""
-								echo "FEPRIMA - Registro cabecera valido"
-								importeGravado=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
-								importeNoGravado=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
-								importeTributoIVA=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
-								importeTotal=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\)/\1/"`
+								if [ "$val" = "$VAL_OK" ]; then
+									echo "|"
+									echo "| FEPRIMA - Formato de registro correcto "
+									echo "|"
 
-								#Obtengo fechaEmision para garbar en el apagar.txt
-								fechaEmision=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
-							else
-								#graba el error en el log
-								glog "feprima" "Factura Erronea en registro cabecera: $archivo" "E"
-								echo ""
-								echo "FEPRIMA - Factura erronea en registro cabecera: $archivo"
-								#paso al siguiente archivo
-								break; 
-							fi
-						else
-							#-----------------------------
-							#Valido el registro de detalle
-							#-----------------------------
-							#Valido el formato del registro de detalle
-							echo ""
-							echo "FEPRIMA - Detalle a validar: $linea"
-							val=`echo "$linea" | sed "s/^[^;]*;[0-9]*\.[0-9]\{2\};[0-9]*\.[0-9]\{2\};[0-9]*\.[0-9]\{2\}$/1/"`
+									precio=`echo "$linea" | sed "s/^[^;]*;\([^;]*\);.*$/\1/"`
+									tasaIVA=`echo "$linea" | sed "s/^[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
+									montoIVA=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;\([^;]*\)$/\1/"`
 
-							if [ "$val = $VAL_OK" ]; then
-								echo ""
-								echo "FEPRIMA - Formato de registro correcto"
+									#Valido que los montos sean > 0
+									valPrecio=`expr $(echo "$precio >= 0" | bc)`
+									valTasaIVA=`expr $(echo "$tasaIVA >= 0" | bc)`
+									valMontoIVA=`expr $(echo "$montoIVA >= 0" | bc)`
 
-								precio=`echo "$linea" | sed "s/^[^;]*;\([^;]*\);.*$/\1/"`
-								tasaIVA=`echo "$linea" | sed "s/^[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
-								montoIVA=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;\([^;]*\)$/\1/"`
-
-								#Valido que los montos sean > 0
-								valPrecio=`expr $(echo "$precio >= 0" | bc)`
-								valTasaIVA=`expr $(echo "$tasaIVA >= 0" | bc)`
-								valMontoIVA=`expr $(echo "$montoIVA >= 0" | bc)`
-
-								if [ $valPrecio -eq 1 -a $valTasaIVA -eq 1 -a $valMontoIVA -eq 1 ]; then
-									echo ""
-									echo "FEPRIMA - Los montos son validos"
-									#Valido MontoIVAItem  = MontoItem * TasaIVAItem /100
-									val=$VAL_OK
-									montoIvaItemAux=`echo "$precio*$tasaIVA*0.01" | bc`
-
-									if [ `expr $(echo "$montoIvaItemAux == $montoIVA" | bc)` -eq 1 ]; then
-										echo ""
-										echo "FEPRIMA - MontoIVAItem: $montoIVA correcto"
+									if [ $valPrecio -eq 1 -a $valTasaIVA -eq 1 -a $valMontoIVA -eq 1 ]; then
+										echo "|"
+										echo "| FEPRIMA - Los montos son validos "
+										echo "|"
+										#Valido MontoIVAItem  = MontoItem * TasaIVAItem /100
 										val=$VAL_OK
-										#actualizo los totales de la factura
-										if [ `expr $(echo "$tasaIVA == 0" | bc)` -eq 1 ]; then
-											#Producto no gravado
-											sumaMontoItemNoGravados=`echo "$sumaMontoItemNoGravados+$precio" | bc`
+										montoIvaItemAux=`echo "$precio*$tasaIVA*0.01" | bc`
+
+										if [ `expr $(echo "$montoIvaItemAux == $montoIVA" | bc)` -eq 1 ]; then
+											echo "|"
+											echo "| FEPRIMA - MontoIVAItem: $montoIVA correcto "
+											echo "|"
+											val=$VAL_OK
+											#actualizo los totales de la factura
+											if [ `expr $(echo "$tasaIVA == 0" | bc)` -eq 1 ]; then
+												#Producto no gravado
+												sumaMontoItemNoGravados=`echo "$sumaMontoItemNoGravados+$precio" | bc`
+											else
+												#Producto gravado
+												sumaMontoItemGravados=`echo "$sumaMontoItemGravados+$precio" | bc`
+											fi
+											#Actualizo el total de montoIVAItem
+											sumaMontoIVAItems=`echo "$sumaMontoIVAItems+$montoIVA" | bc`
 										else
-											#Producto gravado
-											sumaMontoItemGravados=`echo "$sumaMontoItemGravados+$precio" | bc`
+											echo "|"
+											echo "| FEPRIMA - MontoIVAItem: $montoIVA incorrecto "
+											echo "|"
+											val=$VAL_ERROR
 										fi
-										#Actualizo el total de montoIVAItem
-										sumaMontoIVAItems=`echo "$sumaMontoIVAItems+$montoIVA" | bc`
 									else
-										echo ""
-										echo "FEPRIMA - MontoIVAItem: $montoIVA incorrecto"
+										echo "|"
+										echo "| FEPRIMA - Alguno de los montos es invalido (es igual a 00.00) "
+										echo "|"
 										val=$VAL_ERROR
 									fi
 								else
-									echo ""
-									echo "FEPRIMA - Alguno de los montos es invalido (es igual a 00.00)"
+									echo "|"
+									echo "| FEPRIMA - registro detalle con formato invalido "
+									echo "|"
 									val=$VAL_ERROR
 								fi
-							else
-								echo ""
-								echo "FEPRIMA - registro detalle vcon formato invalido"
-								val=$VAL_ERROR
-							fi
 
-							#Verifico si todas las validaciones del detalle dieron ok
-							if [ "$val" = "$VAL_OK" ]; then
-								#Regsitro detalle valido
-								echo ""
-								echo "FEPRIMA - registro detalle valido"
-							else
-								#archivo con errores en detalle
-								glog "feprima" "Factura Erronea en registro de Item: $archivo" "E"
-								echo ""
-								echo "FEPRIMA - Factura Erronea en registro de Item: $archivo"
-								#paso al siguiente archivo
-								break; 
+								#Verifico si todas las validaciones del detalle dieron ok
+								if [ "$val" = "$VAL_OK" ]; then
+									#Regsitro detalle valido
+									echo "|"
+									echo "| FEPRIMA - registro detalle valido "
+									echo "|"									
+								else
+									#archivo con errores en detalle
+									glog "feprima" "Factura Erronea en registro de Item: $archivo" "E"
+									echo "|"
+									echo "| FEPRIMA - Factura Erronea en registro de Item: $archivo "
+									echo "|"	
+									#paso al siguiente archivo
+									break; 
+								fi
 							fi
-						fi
-					done
+						done
+					else
+						echo "|"
+						echo "| FEPRIMA - El archivo $archivo debe tener al menos un registro cabecera y un detalle "
+						echo "|"
+						val=$VAL_ERROR
+					fi
 
-					if [ "$val = $VAL_OK" ]; then
+					if [ "$val" = "$VAL_OK" ]; then
 						#------------------
 						#Valido los totales
 						#------------------
 						valMontoGravado=`echo "$importeGravado == $sumaMontoItemGravados" | bc`
 						if [ $valMontoGravado -eq 1 ]; then
-							echo ""
-							echo "FEPRIMA - La suma de los MontoItem gravados ($sumaMontoItemGravados) es correcta (coincide con ImporteGravado de la cabecera ($importeGravado))"
+							echo "|"
+							echo "|"								
+							echo "|"								
+							echo "|       FEPRIMA - Validando Subtotales "
+							echo "|       ------------------------------"								
+							echo "|"
+							echo "|"		
+							echo "| FEPRIMA - La suma de los MontoItem gravados ($sumaMontoItemGravados) es correcta "
+							echo "|			  (coincide con ImporteGravado de la cabecera ($importeGravado)) "
+							echo "|"
 							val=$VAL_OK
 							valMontoNoGravado=`echo "$importeNoGravado == $sumaMontoItemNoGravados" | bc`
 							if [ $valMontoNoGravado -eq 1 ]; then
-								echo ""
-								echo "FEPRIMA - La suma de los MontoItem no gravados ($sumaMontoItemNoGravados) es correcta (coincide con ImporteNoGravado de la cabecera ($importeNoGravado))"
+								echo "|"
+								echo "| FEPRIMA - La suma de los MontoItem no gravados ($sumaMontoItemNoGravados) es correcta "
+								echo "|           (coincide con ImporteNoGravado de la cabecera ($importeNoGravado))"
+								echo "|"
 								val=$VAL_OK
 								valMontoIVAItem=`echo "$importeTributoIVA == $sumaMontoIVAItems" | bc`
 								if [ $valMontoIVAItem -eq 1 ]; then
-									echo ""
-									echo "FEPRIMA - La suma de los montoIVAItem ($sumaMontoIVAItems) es correcta (coincide con ImporteTributoIVA de la cabecera ($importeTributoIVA))"
+									echo "|"
+									echo "| FEPRIMA - La suma de los montoIVAItem ($sumaMontoIVAItems) es correcta "
+									echo "|           (coincide con ImporteTributoIVA de la cabecera ($importeTributoIVA))"
+									echo "|"
 									val=$VAL_OK
 									#valido el importe total
 									sumaTotal=`echo "$importeGravado + $importeNoGravado + $importeTributoIVA" | bc`
 									valTotal=`echo "$importeTotal == $sumaTotal" | bc`
 									if [ $valTotal -eq 1 ]; then
-										echo ""
-										echo "FEPRIMA - La suma de los totales ($sumaTotal) es correcta (coincide con ImporteTotal de la cabecera ($importeTotal))"
+										echo "|"
+										echo "| FEPRIMA - La suma de los totales ($sumaTotal) es correcta "
+										echo "|           (coincide con ImporteTotal de la cabecera ($importeTotal))"
+										echo "|"
 										val=$VAL_OK
 									else
-										echo ""
-										echo "FEPRIMA - La suma de los totales ($sumaTotal) no coincide con ImporteTotal ($importeTotal)"
+										echo "|"
+										echo "| FEPRIMA - La suma de los totales ($sumaTotal) no coincide "
+										echo "|           con ImporteTotal ($importeTotal)"
+										echo "|"
 										val=$VAL_ERROR
 									fi
 								else
-									echo ""
-									echo "FEPRIMA - La suma de los montoIVAItem ($sumaMontoIVAItems) no coincide con ImporteTributoIVA de la cabecera ($importeTributoIVA)"
+									echo "|"
+									echo "| FEPRIMA - La suma de los montoIVAItem ($sumaMontoIVAItems) no coincide "
+									echo "|           con ImporteTributoIVA de la cabecera ($importeTributoIVA)"
+									echo "|"
 									val=$VAL_ERROR
 									glog "feprima" "Factura Erronea no coinciden los totales: $archivo" "E"
-									echo ""
-									echo "FEPRIMA - Factura Errornea no coinciden los totales: $archivo"
+									echo "|"
+									echo "| FEPRIMA - Factura Errornea no coinciden los totales: $archivo"
+									echo "|"
 								fi
 							else
-								echo ""
-								echo "FEPRIMA - La suma de los MontoItem no gravados ($sumaMontoItemNoGravados) no coincide con ImporteNoGravado de la cabecera ($importeNoGravado)"                
+								echo "|"
+								echo "| FEPRIMA - La suma de los MontoItem no gravados ($sumaMontoItemNoGravados)" 
+								echo "|           no coincide con ImporteNoGravado de la cabecera ($importeNoGravado)" 
+								echo "|"               
 								val=$VAL_ERROR
 								glog "feprima" "Factura Erronea no coinciden los totales: $archivo" "E"
-								echo ""
-								echo "FEPRIMA - Factura Erronea no coinciden lo totales c: $archivo"
+								echo "|"
+								echo "| FEPRIMA - Factura Erronea no coinciden lo totales c: $archivo"
+								echo "|"
 							fi
 						else
-							echo ""
-							echo "FEPRIMA - La suma de los MontoItem gravados ($sumaMontoItemGravados) no coincide con ImporteGravado de la cabecera ($importeGravado)"
+							echo "|"
+							echo "| FEPRIMA - La suma de los MontoItem gravados ($sumaMontoItemGravados)" 
+							echo "|           no coincide con ImporteGravado de la cabecera ($importeGravado)"
+							echo "|"
 							val=$VAL_ERROR
 							glog "feprima" "Factura Erronea no coinciden los totales: $archivo" "E"
-							echo ""
-							echo "FEPRIMA - Factura Erronea no coinciden los totales"
+							echo "|"
+							echo "| FEPRIMA - Factura Erronea no coinciden los totales"
+							echo "|"
 						fi
 					fi
 					
@@ -326,15 +420,17 @@ if [ $cant -eq 3 ]; then
 						#Grabo en el archivo apagar.txt
 						linea_salida="$archivo;$fechaVencimiento;$importeTotal;A PAGAR"
 						echo "$linea_salida" >> "$PATH_ARCH_FACT_PAGAR"
-						echo ""
-						echo "FEPRIMA - Se grabo en el archivo $PATH_ARCH_FACT_PAGAR el registro: $linea_salida"
+						echo "|"
+						echo "| FEPRIMA - Se grabo en el archivo $PATH_ARCH_FACT_PAGAR el registro: $linea_salida"
+						echo "|"
 
 						#muevo el archivo a aceptados
 						mover $PATH_FACT_RECIBIDAS/$archivo $PATH_FACT_ACEPTADAS/$archivo
 						#Grabo en log
 						glog "feprima" "Factura Aceptada: $archivo" "I"
-						echo ""
-						echo "FEPRIMA - Factura Aceptada: $archivo"
+						echo "|"
+						echo "| FEPRIMA - Factura Aceptada: $archivo"
+						echo "|"
 					else
 						#archivo con errores
 						mover $PATH_FACT_RECIBIDAS/$archivo $PATH_FACT_RECHAZADAS/$archivo
@@ -344,30 +440,38 @@ if [ $cant -eq 3 ]; then
 					mover $PATH_FACT_RECIBIDAS/$archivo $PATH_FACT_RECHAZADAS/$archivo
 					#grabo en LOG
 					glog "feprima" "Factura Duplicada: $archivo" "W"
-					echo ""
-					echo "FEPRIMA - Factura Duplicada: $archivo"
+					echo "|"
+					echo "| FEPRIMA - Factura Duplicada: $archivo"
+					echo "|"
 				fi
 			done
 			#Grabo en log
 			glog "feprima" "Fin de feprima"
-			echo ""
-			echo "FEPRIMA - Fin de FEPRIMA"
+			echo "|"
+			echo "| FEPRIMA - Fin de FEPRIMA"
+			echo "|"
 		else 
-			echo ""
-			echo "FEPRIMA - no hay archivos para procesar en $PATH_FACT_RECIBIDAS"
+			echo "|"
+			echo "| FEPRIMA - no hay archivos para procesar en $PATH_FACT_RECIBIDAS"
+			echo "|"
 			returncode=$NO_HAY_ARCHIVOS
 		fi
 	else
 		#El ambiente no esta inicializado
 		returncode=$AMBIENTE_NO_INICIALIZADO
-		echo ""
-		echo "FEPRIMA - No se puede iniciar feprima porque el ambiente no esta inicializado"
+		echo "|"
+		echo "| FEPRIMA - No se puede iniciar feprima porque el ambiente no esta inicializado"
+		echo "|"
 	fi
 else 
 	# Ya se estaba ejecutando
 	returncode=$FEPRIMA_INICIADO
-	echo ""
-	echo "FEPRIMA - No se puede iniciar feprima pues ya está el proceso corriendo"
+	echo "|"
+	echo "| FEPRIMA - No se puede iniciar feprima pues ya está el proceso corriendo"
+	echo "|"
 fi
 
+echo "|"
+echo " ----------------------------------------------------------------------------------------------------"
+echo ""
 exit $returncode
