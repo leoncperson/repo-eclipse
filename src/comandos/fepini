@@ -48,7 +48,7 @@ if [ $returncode -eq $OK ]; then
       returncode=$AMBIENTE_YA_INICILIZADO
    else
       #seteo el directorio del tp
-#      GRUPO="/home/drmk/facultad/7508/tp/src"
+#      GRUPO="/home/nscuri/repo/src"
 	GRUPO="$CURRDIR/../"
    fi
 fi
@@ -133,13 +133,13 @@ if [ $returncode -eq $OK ]; then
 fi
 
 if [ $returncode -eq $OK ]; then
-    cant=`expr $(ps -eo args | grep "feponio" | grep $USER | grep -v "startfeponio" | grep -v "stopfeponio" | grep -v grep | wc -l)`
+    cant=`expr $(ps -eo args | grep "feponio" | grep -v "startfe" | grep -v "stopfe" | grep -v grep | wc -l)`
     if [ $cant -eq 0 ]; then
 #      echo "No se encuentra feponio corriendo."
       #Iniciamos el demonio
-      startfeponio
+      startfe
 
-		pid="$(ps -eo pid,args | grep "feponio" | grep -v "startfeponio" | grep -v "stopfeponio" | grep -v grep | cut -c1-6)"
+		pid="$(ps -eo pid,args | grep "feponio" | grep -v "startfe" | grep -v "stopfe" | grep -v grep | cut -c1-6)"
 		echo "----------------------------------------------------------"
 		echo " FEPINI - Demonio corriendo bajo el no: $pid"
 		echo "----------------------------------------------------------"
