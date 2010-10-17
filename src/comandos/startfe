@@ -1,0 +1,9 @@
+#!/bin/bash
+    cant=`expr $(ps -eo args | grep "feponio" | grep $USER | grep -v "startfe" | grep -v "stopfe" | grep -v grep | wc -l)`
+    if [ $cant -eq 0 ]; then
+		feponio &
+   else 
+      echo ""
+      echo "STARTFE - Inicializacion de ambiente no fue exitosa. El demonio feponio se encuentra corriendo."
+      returncode=$DEMONIO_YA_ESTA_CORRIENDO
+   fi
