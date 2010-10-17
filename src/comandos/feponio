@@ -84,7 +84,7 @@ if [ $GRUPO ]; then
   #se inicializo el ambiente.
 
   #verifico que no haya otro demonio corriendo
-  cant=`expr $(ps -eo args | grep "feponio" | grep -v "startfeponio" | grep -v "stopfeponio" | grep -v grep | wc -l)`
+  cant=`expr $(ps -eo args | grep "feponio" | grep -v "startfe" | grep -v "stopfe" | grep -v grep | wc -l)`
   if [ $cant -eq 3 ]; then
     #no se esta ejecutando
     returncode=$OK
