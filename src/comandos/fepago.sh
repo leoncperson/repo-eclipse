@@ -1,6 +1,7 @@
 #!/bin/bash
 MSG="./glog"                 #Nombre del script que imprime mensajes en archivo de log
 #constantes
+FEPAGO_PATH_LOG=$MSG $PWD/log/"fepago"
 A_PAGAR="A PAGAR"
 FILE_APAGAR=$PWD"/../facturas/apagar.txt"
 FILE_PRESU=$PWD"/../pp/presu.txt"
@@ -43,7 +44,7 @@ function existeFepago
 	#Si se encuentra que se ha ejecutado.
 	if [ $CNTPROC -gt 2 ]; then
 #	if [ -n "$PID" ]; then
-		$MSG $PWD/log/"fepago" "Se ha encontrado una instancia previa del programa fepago" "E"
+		$FEPAGO_PATH_LOG "Se ha encontrado una instancia previa del programa fepago" "E"
 		echo "Se ha encontrado una instancia previa del programa fepago"
 		exit 1
 	fi
@@ -61,7 +62,7 @@ function existeFeprima
 	#Si se encuentra que se ha ejecutado.
 	if [ $CNTPROC -gt 2 ]; then
 #	if [ -n "$PID" ]; then
-		$MSG $PWD/log/"fepago" "Se ha encontrado una instancia previa del programa feprima" "E"
+		$FEPAGO_PATH_LOG "Se ha encontrado una instancia previa del programa feprima" "E"
 		echo "Se ha encontrado una instancia previa del programa feprima"
 		exit 1
 	fi
@@ -86,17 +87,17 @@ function obtenerPID
 function OLD_checkParametros
 {
 	#se graba en el log
-	$MSG $PWD/log/"fepago" "Inicio de fepago: $1 $2" "I"
+	$FEPAGO_PATH_LOG "Inicio de fepago: $1 $2" "I"
 	if [ -z $1 ] ; then
-		$MSG $PWD/log/"fepago" "Error en cantidad de argumentos" "E"
+		$FEPAGO_PATH_LOG "Error en cantidad de argumentos" "E"
 		exit 0
 	fi
 	if [ -z $2 ] ; then
-		$MSG $PWD/log/"fepago" "Error en cantidad de argumentos" "E"
+		$FEPAGO_PATH_LOG "Error en cantidad de argumentos" "E"
 		exit 0
 	fi
 	if [ -z $3 ] ; then
-		$MSG $PWD/log/"fepago" "Error en cantidad de argumentos" "E"
+		$FEPAGO_PATH_LOG "Error en cantidad de argumentos" "E"
 		exit 0
 	fi
 }
@@ -224,9 +225,9 @@ function checkDispo
 {
 	montoPag=$1
 	getFuenteByRango $montoPag
-	nroFuente=$?
-	getMontoxFuente $FILE_PRESU $nroFuente $montoFte
-	montoFte=$?
+	nroFte=$?
+	getMontoxFuente $FILE_PRESU $nroFte
+	montoFte=$gMontoFuente
 	if [ `echo "$montoPag > $montoFte" | bc -l` = "1" ]; then
 		return 0
 	else
@@ -268,18 +269,13 @@ function recorrerFacturas
 		procFileFacturaAPagar $estado $numLine $line
 		# 1ero se filtra por estado "A PAGAR"	
 		if [ $? -eq 1 ]; then
-			echo "checkCondicion"
 			checkCondicion $opt
 			# 2do se filtra por la condicion de barrido
 			if [ $? -eq 1 ]; then
 				if [ $gOptModo = "Actualizacion" ] ; then
-					echo ES Actualizacion
 					# 3ero se filtra por la disponibilidad
-					echo "checkCondicion"
 					checkDispo $gMontoPag
 					if [ $? -eq 1 ]; then
-						echo "LINEA" $line
-						echo $optModo
 						echo $line >> $FILE_APAGAR_TEMP
 						updateDispo $gMontoPag
 					fi
@@ -352,12 +348,10 @@ function getFuenteByRango
 function mainCheck
 {
 	checkVariablesAmbiente
-	local retcode=$?
-	echo RET es "$retcode"
 
 	if [ $? -ne 0 ]
 	then 
-		$MSG $PWD/log/"fepago" "Faltan inicializar variables de ambiente" "E"
+		$FEPAGO_PATH_LOG "Faltan inicializar variables de ambiente" "E"
 		#Intento de mover un archivo que no existe en arribos
 		exit 0
 		#return $retcode 
@@ -620,13 +614,13 @@ function menuBarrido
 			read fHasta
 			validRangoFechas $fDesde $fHasta
 			if [ $? -eq 1 ]; then
-				gFechaDesde=$fDesde
-				gFechaHasta=$fHasta
 				gOptBarrido=$opt
+				#se graban en el log los parametros de inicio
+				$FEPAGO_PATH_LOG "Inicio de fepago: $gOptModo $gOptBarrido $gFechaDesde $gFechaHasta" "I"
 				return 1
 			else
 				echo "ERROR en parametros de entrada"
-				$MSG $PWD/log/"fepago" "Rango de fechas invalida" "E"
+				$FEPAGO_PATH_LOG "Rango de fechas invalida" "E"
 			fi
 			#se trabaja con rango de fechas
 		elif [ "$opt" = "Importes" ]; then
@@ -637,13 +631,13 @@ function menuBarrido
 			read montoHasta
 			validRangoMontos $montoDesde $montoHasta
 			if [ $? -eq 1 ]; then
-				gMontoDesde=$montoDesde
-				gMontoHasta=$montoHasta
 				gOptBarrido=$opt
+				#se graban en el log los parametros de inicio
+				$FEPAGO_PATH_LOG "Inicio de fepago: $gOptModo $gOptBarrido $gMontoDesde $gMontoHasta" "I"				
 				return 1
 			else
 				echo "ERROR en parametros de entrada"
-				$MSG $PWD/log/"fepago" "Rango de importes invalido" "E"
+				$FEPAGO_PATH_LOG "Rango de importes invalido" "E"
 			fi
 			#se trabaja con rango de Importes
 		elif [ "$opt" = "Fechas_Importes" ]; then
@@ -657,10 +651,12 @@ function menuBarrido
 			validRangoFechasMontos $fDesde $fHasta $montoDesde $montoHasta
 			if [ $? -eq 1 ]; then
 				gOptBarrido=$opt
+				#se graban en el log los parametros de inicio
+				$FEPAGO_PATH_LOG "Inicio de fepago: $gOptModo $gOptBarrido $gFechaDesde $gFechaHasta $gMontoDesde $gMontoHasta" "I"				
 				return 1
 			else
 				echo "ERROR en parametros de entrada"
-				$MSG $PWD/log/"fepago" "Rango de fechas/importes invalido" "E"
+				$FEPAGO_PATH_LOG "Rango de fechas/importes invalido" "E"
 			fi
 			#se trabaja con rango de Fechas_Importes
 		else
@@ -675,8 +671,6 @@ function mainPrincipal
 {
 	existeFepago
 	existeFeprima
-	#se graba en el log
-	$MSG $PWD/log/"fepago" "Inicio de fepago:" "I"
 	menuModos
 	if [ $? -eq 100 ]; then 
 		echo "FIN DE EJECUCION"
