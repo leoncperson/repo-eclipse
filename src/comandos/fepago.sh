@@ -370,16 +370,39 @@ function mainCheck
 	fi 
 }
 
+
 #recibe un argumento $1 que contiene la fecha a validar
 #retorna 1 si es valida
 #retorna 0 si es invalida
 function validFecha
 {
 	line=$1
-	fechaTemp=`echo "$line" | grep '^\([1-2][0-9]\{3\}-[0-1][0-9]-[0-3][0-9]\)$'`
-	if test -z $fechaTemp
-	then
+	year=`echo $line | cut -d"-" -f1`
+	if test -z $year ; then
 		return 0
+	else
+		year=`echo "$year" | grep '19[0-9][0-9]\|20[0-3][0-7]\|2008\|2009'`
+		if test -z $year ; then
+			return 0
+		fi
+	fi
+	month=`echo $line | cut -d"-" -f2`
+	if test -z $month ; then
+		return 0
+	else
+		month=`echo "$month" | grep '1[0-2]\|0[1-9]'`
+		if test -z $month ; then
+			return 0
+		fi
+	fi
+	day=`echo $line | cut -d"-" -f3`
+	if test -z $day ; then
+		return 0
+	else
+		day=`echo "$day" | grep '[0-2][0-9]\|30\|31'`
+		if test -z $day ; then
+			return 0
+		fi		
 	fi
 	return 1
 }
