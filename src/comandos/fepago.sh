@@ -5,9 +5,11 @@ FEPAGO_PATH_LOG=$(echo $MSG $PWD"/log/fepago")
 A_PAGAR="A PAGAR"
 FILE_APAGAR=$PWD"/../facturas/apagar.txt"
 FILE_PRESU=$PWD"/../pp/presu.txt"
-FILE_APAGAR_VERSION=$PWD"/../facturas/old/apagar."
+PREFIX_APAGAR_VERSION=$PWD"/../facturas/old/apagar."
+VERSION_APAGAR=$PWD"/../facturas/old/version_apagar.dat"
 FILE_APAGAR_TEMP=$PWD"/../facturas/old/apagar.tmp"
-FILE_PRESU_VERSION=$PWD"/../pp/old/presu."
+PREFIX_PRESU_VERSION=$PWD"/../pp/old/presu."
+VERSION_PRESU=$PWD"/../facturas/old/version_presu.dat"
 FILE_PRESU_TEMP=$PWD"/../pp/old/presu.tmp"
 #varibles globales
 gLineaFactura=""
@@ -84,23 +86,7 @@ function obtenerPID
 		#echo $PID # Muestra el PID por stdout
 	fi
 }
-function OLD_checkParametros
-{
-	#se graba en el log
-	$FEPAGO_PATH_LOG "Inicio de fepago: $1 $2" "I"
-	if [ -z $1 ] ; then
-		$FEPAGO_PATH_LOG "Error en cantidad de argumentos" "E"
-		exit 0
-	fi
-	if [ -z $2 ] ; then
-		$FEPAGO_PATH_LOG "Error en cantidad de argumentos" "E"
-		exit 0
-	fi
-	if [ -z $3 ] ; then
-		$FEPAGO_PATH_LOG "Error en cantidad de argumentos" "E"
-		exit 0
-	fi
-}
+
 
 function checkVariablesAmbiente(){
    #export GRUPO
@@ -200,6 +186,7 @@ function checkVariablesAmbiente(){
 }
 # $1 nombre del archivo
 # $2 nro de fuente a buscar
+#si la fuente no existe retorna 0
 function getMontoxFuente
 {
 #linea de presu.txt
@@ -209,9 +196,10 @@ function getMontoxFuente
 	do 
 		fuenteLine=`echo "$line" | sed "s/^\([0-9]\{2\}\);.*/\1/"`	   
 		montoDispo=`echo "$line" | sed "s/^\([0-9]\{2\}\);\([0-9]*\.[0-9]\{2\}\);.*/\2/"`	   
-		if [ "$fuente" -eq "$fuenteLine" ]
+		if [ "$fuente" = "$fuenteLine" ]
 		then
 			gMontoFuente=$montoDispo
+			return 1
 		fi
 	done < $1
 	return 0
@@ -227,12 +215,17 @@ function checkDispo
 	getFuenteByRango $montoPag
 	nroFte=$?
 	getMontoxFuente $FILE_PRESU $nroFte
-	montoFte=$gMontoFuente
-	if [ `echo "$montoPag > $montoFte" | bc -l` = "1" ]; then
-		return 0
+	if [ $? -eq 1 ] ; then
+		montoFte=$gMontoFuente
+		if [ `echo "$montoPag > $montoFte" | bc -l` = "1" ]; then
+			return 0
+		else
+			return 1
+		fi	
 	else
-		return 1
-	fi	
+		#la fuente no existe
+		$FEPAGO_PATH_LOG "El numero de fuente no existe en el archivo presu.txt" "E"
+	fi
 }
 # $1 valor a restar de la disponibilidad
 function updateDispo
@@ -241,26 +234,44 @@ function updateDispo
 	getFuenteByRango $montoPag
 	nroFte=$?
 	getMontoxFuente $FILE_PRESU $nroFte
-	montoFte=$gMontoFuente
-	if [ `echo "$montoPag > $montoFte" | bc -l` = "1" ]; then
-		return 0
+	if [ $? -eq 1 ] ; then
+		montoFte=$gMontoFuente
+		if [ `echo "$montoPag > $montoFte" | bc -l` = "1" ]; then
+			return 0
+		else
+			#sed -e 's/11;\([0-9]*.[0-9]\{2\}\)/11;33/g' test.txt 
+			diferMonto=`echo "$montoFte-$montoPag" | bc`
+			sed $FILE_PRESU -e "s/$nroFte;\([0-9]*.[0-9]\{2\}\);/$nroFte;$diferMonto;/g" > $FILE_PRESU_TEMP
+			cat $FILE_PRESU_TEMP > $FILE_PRESU
+			rm -f $FILE_PRESU_TEMP
+			return 1
+		fi	
 	else
-		#sed -e 's/11;\([0-9]*.[0-9]\{2\}\)/11;33/g' test.txt 
-		diferMonto=`echo "$montoFte-$montoPag" | bc`
-		sed $FILE_PRESU -e "s/$nroFte;\([0-9]*.[0-9]\{2\}\);/$nroFte;$diferMonto;/g" > $FILE_PRESU_TEMP
-		cat $FILE_PRESU_TEMP > $FILE_PRESU
-		rm -f $FILE_PRESU_TEMP
-		return 1
-	fi	
+		#la fuente no existe
+		$FEPAGO_PATH_LOG "El numero de fuente no existe en el archivo presu.txt	" "E"
+	fi
 }
 # recorre el archivo de facturas
 # $1 nombre de archivo
 # $2 estado de busqueda
-# $3 opt del mennu
+# $3 opt del menu de barrido
 function recorrerFacturas
 {
 	#se borra el temporal por si estaba
 	rm -f $FILE_APAGAR_TEMP
+
+	#-------------------copia facturas
+	nextNroVersion $VERSION_APAGAR
+	versionAPagar=$?
+	cp $FILE_APAGAR $PREFIX_APAGAR_VERSION$versionAPagar
+	#-------------------
+	if [ $gOptModo = "Actualizacion" ] ; then
+		#-------------------copia presupuesto
+		nextNroVersion $VERSION_PRESU
+		versionPresu=$?
+		cp $FILE_PRESU $PREFIX_PRESU_VERSION$versionPresu
+		#-------------------
+	fi
 	numLine=0	
 	estado=$2
 	opt=$3
@@ -279,8 +290,8 @@ function recorrerFacturas
 						echo $line >> $FILE_APAGAR_TEMP
 						updateDispo $gMontoPag
 					fi
-				elif [ $gOptModo = "Simulacion" ] ; then
-					echo ES Simulacion
+#				elif [ $gOptModo = "Simulacion" ] ; then
+#					echo ES Simulacion
 				fi
 			fi
 		fi
@@ -304,9 +315,6 @@ function procFileFacturaAPagar
 #	estadoFac=`echo "$line" | sed "s/^\([0-9]\{14\}\);\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\);\([0-9]*\.[0-9]\{2\}\);\([A-Z ]\)/\4/"`
 	estadoFac=`echo "$line" | sed "s/^[^;]*;[^;]*;[^;]*;\([^;]*\).*$/\1/"`
 # 	estadoFac=`echo "$line" | cut -d";" -f4` `
-#si falla aca invocar antes a
-#perl -i -p -e 's/\r\n/\n/' ../facturas/apagar.txt
-# para sacar los fin de linea de windows
 	if [ `echo "$numLine > $gNumLineFac" | bc -l` = "1" ]; then
 		if [ "$estadoFac" = "A PAGAR" ]; then
 			gCodigoCAE=$codigoCAE
@@ -348,7 +356,6 @@ function getFuenteByRango
 function mainCheck
 {
 	checkVariablesAmbiente
-
 	if [ $? -ne 0 ]
 	then 
 		$FEPAGO_PATH_LOG "Faltan inicializar variables de ambiente" "E"
@@ -411,6 +418,7 @@ function validMonto
 #obtiene la version del archivo
 #actualiza el nro de version
 #si no existe lo crea
+# $1 nombre del archivo donde se guarda el nro de version
 function nextNroVersion
 {
 	nroVersion=0
@@ -425,7 +433,6 @@ function nextNroVersion
 	fi
 	#se obtiene el nro de version y se actualiza
 	echo $((nroVersion+1))>$archivo
-	cat $archivo
 	return $nroVersion
 }
 
@@ -620,7 +627,6 @@ function menuBarrido
 				return 1
 			else
 				echo "ERROR en parametros de entrada"
-				echo $FEPAGO_PATH_LOG
 				$FEPAGO_PATH_LOG "Rango de fechas invalida" "E"
 			fi
 			#se trabaja con rango de fechas
@@ -672,17 +678,19 @@ function mainPrincipal
 {
 	existeFepago
 	existeFeprima
-	menuModos
-	if [ $? -eq 100 ]; then 
-		echo "FIN DE EJECUCION"
-		return
-	fi
-	menuBarrido
-	if [ $? -eq 100 ]; then 
-		echo "FIN DE EJECUCION"
-		return
-	fi		
-	recorrerFacturas $FILE_APAGAR "A PAGAR" $gOptBarrido
+	while [ 1 ]; do
+		menuModos
+		if [ $? -eq 100 ]; then 
+			echo "FIN DE EJECUCION"
+			return
+		fi
+		menuBarrido
+		if [ $? -eq 100 ]; then 
+			echo "FIN DE EJECUCION"
+			return
+		fi		
+		recorrerFacturas $FILE_APAGAR "A PAGAR" $gOptBarrido
+	done
 }
 #existeFepago
 #existeFeprima
