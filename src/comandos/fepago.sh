@@ -207,9 +207,7 @@ function getMontoxFuente
 	while read line
 	do 
 		fuenteLine=`echo "$line" | sed "s/^\([0-9]\{2\}\);.*/\1/"`	   
-		echo FUENTE es $fuenteLine
 		montoDispo=`echo "$line" | sed "s/^\([0-9]\{2\}\);\([0-9]*\.[0-9]\{2\}\);.*/\2/"`	   
-		echo MONTO es $montoDispo
 		if [ "$fuente" -eq "$fuenteLine" ]
 		then
 			gMontoFuente=$montoDispo
@@ -229,7 +227,7 @@ function checkDispo
 	nroFuente=$?
 	getMontoxFuente $FILE_PRESU $nroFuente $montoFte
 	montoFte=$?
-	if [ `echo $montoPag>$montoFte | bc` ]; then
+	if [ `echo "$montoPag > $montoFte" | bc -l` = "1" ]; then
 		return 0
 	else
 		return 1
@@ -242,15 +240,12 @@ function updateDispo
 	getFuenteByRango $montoPag
 	nroFte=$?
 	getMontoxFuente $FILE_PRESU $nroFte
-	echo BUG-010
 	montoFte=$gMontoFuente
-	echo $montoPag $montoFte
-	if [ `echo "$montoPag > $montoFte" | bc -l` -eq 1 ]; then
+	if [ `echo "$montoPag > $montoFte" | bc -l` = "1" ]; then
 		return 0
 	else
 		#sed -e 's/11;\([0-9]*.[0-9]\{2\}\)/11;33/g' test.txt 
-		diferMonto=`echo $montoFte-$montoPag | bc`
-		echo $diferMonto DIFER
+		diferMonto=`echo "$montoFte-$montoPag" | bc`
 		sed $FILE_PRESU -e "s/$nroFte;\([0-9]*.[0-9]\{2\}\);/$nroFte;$diferMonto;/g" > $FILE_PRESU_TEMP
 		cat $FILE_PRESU_TEMP > $FILE_PRESU
 		rm -f $FILE_PRESU_TEMP
@@ -263,6 +258,8 @@ function updateDispo
 # $3 opt del mennu
 function recorrerFacturas
 {
+	#se borra el temporal por si estaba
+	rm -f $FILE_APAGAR_TEMP
 	numLine=0	
 	estado=$2
 	opt=$3
@@ -275,19 +272,24 @@ function recorrerFacturas
 			checkCondicion $opt
 			# 2do se filtra por la condicion de barrido
 			if [ $? -eq 1 ]; then
-				# 3ero se filtra por la disponibilidad
-				checkDispo $gMontoPag
-				if [ $? -eq 1 ]; then
-					echo $FILE_APAGAR_TEMP
-					echo $line >> $FILE_APAGAR_TEMP
-					echo "OK"
-					updateDispo $gMontoPag
-					return 1
+				if [ $gOptModo = "Actualizacion" ] ; then
+					echo ES Actualizacion
+					# 3ero se filtra por la disponibilidad
+					echo "checkCondicion"
+					checkDispo $gMontoPag
+					if [ $? -eq 1 ]; then
+						echo "LINEA" $line
+						echo $optModo
+						echo $line >> $FILE_APAGAR_TEMP
+						updateDispo $gMontoPag
+					fi
+				elif [ $gOptModo = "Simulacion" ] ; then
+					echo ES Simulacion
 				fi
 			fi
 		fi
 	done < $1
-	return 0
+	return 1
 }
 #recorre el archivo de facturas y busca los registros
 # $1 estado a buscar
@@ -300,22 +302,17 @@ function procFileFacturaAPagar
 	numLine=$2
 	#line=$3
 	numLine=$((numLine+1))
-# 	echo $numLine
 	codigoCAE=`echo "$line" | sed "s/^\([0-9]\{14\}\);.*/\1/"`	   
-# 	echo CAE es $codigoCAE
 	fechaVenc=`echo "$line" | sed "s/^\([0-9]\{14\}\);\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\);.*/\2/"`	   
-# 	echo FECHAVENC es $fechaVenc
 	montoPag=`echo "$line" | sed "s/^\([0-9]\{14\}\);\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\);\([0-9]*\.[0-9]\{2\}\).*/\3/"`   
-# 	echo MONTOPAG es $montoPag
 #	estadoFac=`echo "$line" | sed "s/^\([0-9]\{14\}\);\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\);\([0-9]*\.[0-9]\{2\}\);\([A-Z ]\)/\4/"`
 	estadoFac=`echo "$line" | sed "s/^[^;]*;[^;]*;[^;]*;\([^;]*\).*$/\1/"`
 # 	estadoFac=`echo "$line" | cut -d";" -f4` `
 #si falla aca invocar antes a
 #perl -i -p -e 's/\r\n/\n/' ../facturas/apagar.txt
 # para sacar los fin de linea de windows
-	if [ `echo "$numLine>$gNumLineFac" | bc` ]; then
+	if [ `echo "$numLine > $gNumLineFac" | bc -l` = "1" ]; then
 		if [ "$estadoFac" = "A PAGAR" ]; then
-			echo IGUAL
 			gCodigoCAE=$codigoCAE
 			gFechaVenc=$fechaVenc
 			gMontoPag=$montoPag
@@ -326,7 +323,6 @@ function procFileFacturaAPagar
 		fi
 	fi
 	return 0
-
 }
 # $1 valor a comparar
 #retorna el tipo de fuente segun en que rango este el valor
@@ -334,9 +330,7 @@ function procFileFacturaAPagar
 function getFuenteByRango
 {
 	valor=$1
-	echo "1000.00 > $valor" | bc -l
-	if [ `echo "1000.00 > $valor" | bc -l`-eq1 ]; then
-	echo busca rango para $valor
+	if [ `echo "1000.00 > $valor" | bc -l` = "1" ]; then
 		return 11
 	fi
 	if [ `echo "$valor >= 1000.00 && 10000.00 > $valor" | bc -l` -eq 1 ]; then
@@ -471,14 +465,14 @@ function validRangoFechas
 function validRangoMontos
 {
 	validMonto $1
-	if [ $? -eq 1 ]; then
+	if [ $? -eq 1 ]; then	
 		validMonto $2
 		if [ $? -eq 1 ]; then
 			#ambas son validas
 			montoDesde=$1
 			montoHasta=$2
 			#controlar rango
-			if [ `echo "$montoDesde>$montoHasta" | bc -l`-eq1 ]; then
+			if [ `echo "$montoDesde > $montoHasta" | bc -l` = "1" ]; then
 				return 0
 			else
 				gMontoDesde=$montoDesde
@@ -486,9 +480,8 @@ function validRangoMontos
 				return 1
 			fi			
 		fi
-	else
-		return 0
 	fi	
+	return 0
 	
 }
 #esta funcion lee de consola 4 parametros
@@ -510,6 +503,7 @@ function validRangoFechasMontos
 					gFechaHasta=$2
 					gMontoDesde=$3
 					gMontoHasta=$4
+					return 1
 				fi
 			fi
 		fi
@@ -521,19 +515,16 @@ function validRangoFechasMontos
 function checkCondicion
 {
 	opt=$1
-	echo BUG-000
 	if [ "$opt" = "Fechas" ]; then
 		#recibe fechaDesde,fechaHasta valorFecha
 		checkCondicionFechas $gFechaDesde $gFechaHasta $gFechaVenc
 		return $?
 	fi
-echo $opt BUG-001	
 	if [ "$opt" = "Importes" ]; then
 		#recibe montoDesde,montoHasta valorMonto
 		checkCondicionMontos $gMontoDesde $gMontoHasta $gMontoPag
 		return $?
 	fi
-echo BUG-002
 	if [ "$opt" = "Fechas_Importes" ]; then
 		#recibe fechaDesde,fechaHasta valorFecha
 		checkCondicionFechas $gFechaDesde $gFechaHasta $gFechaVenc
@@ -546,7 +537,6 @@ echo BUG-002
 			return $?
 		fi
 	fi
-echo BUG-003	
 	return 0	
 }
 #esta funcion checkea que el valor este dentro del rango de fecha
@@ -581,10 +571,10 @@ function checkCondicionMontos
 	montoDesde=$1
 	montoHasta=$2
 	valorMonto=$3
-	if [ `echo $montoDesde>$valorMonto | bc`]; then
+	if [ `echo "$montoDesde  > $valorMonto" | bc` = "1" ]; then
 		return 0
 	else
-		if [ `echo $valorMonto>$montoHasta | bc`]; then
+		if [ `echo "$valorMonto > $montoHasta" | bc` = "1" ]; then
 			return 0
 		else
 			return 1
@@ -599,16 +589,13 @@ function menuModos
 	OPCIONES_MODO="Simulacion Actualizacion Salir"
 	select opt in $OPCIONES_MODO; do
 		if [ "$opt" = "Simulacion" ]; then
-			echo Simulacion
-			gOptModo=1
+			gOptModo="Simulacion"
 			return 1
 		elif [ "$opt" = "Actualizacion" ]; then
-			echo Actualizacion
-			gOptModo=2
+			gOptModo="Actualizacion"
 			return 2
 		elif [ "$opt" = "Salir" ]; then
-			echo Salir
-			gOptModo=100
+			gOptModo="Salir"
 			return 100
 		else
 			#clear
@@ -644,8 +631,8 @@ function menuBarrido
 			#se trabaja con rango de fechas
 		elif [ "$opt" = "Importes" ]; then
 			echo "Importes"
-			echo Ingrese [montoDesde] [montoHasta]
-			echo formato XXX X.XX
+			echo "Ingrese [montoDesde] [montoHasta]"
+			echo "formato XXX X.XX"
 			read montoDesde
 			read montoHasta
 			validRangoMontos $montoDesde $montoHasta
@@ -700,14 +687,8 @@ function mainPrincipal
 		echo "FIN DE EJECUCION"
 		return
 	fi		
-	gNroVersionPresu=
-	#se borra el temporal por si estaba
-	rm -f $FILE_APAGAR_TEMP
-	echo LIN685
 	recorrerFacturas $FILE_APAGAR "A PAGAR" $gOptBarrido
 }
-#recorrerArch_presu
-#mainCheck
 #existeFepago
 #existeFeprima
 
