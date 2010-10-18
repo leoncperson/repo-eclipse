@@ -1,7 +1,7 @@
 #!/bin/bash
 MSG="./glog"                 #Nombre del script que imprime mensajes en archivo de log
 #constantes
-FEPAGO_PATH_LOG=$MSG $PWD/log/"fepago"
+FEPAGO_PATH_LOG=$(echo $MSG $PWD"/log/fepago")
 A_PAGAR="A PAGAR"
 FILE_APAGAR=$PWD"/../facturas/apagar.txt"
 FILE_PRESU=$PWD"/../pp/presu.txt"
@@ -616,10 +616,11 @@ function menuBarrido
 			if [ $? -eq 1 ]; then
 				gOptBarrido=$opt
 				#se graban en el log los parametros de inicio
-				$FEPAGO_PATH_LOG "Inicio de fepago: $gOptModo $gOptBarrido $gFechaDesde $gFechaHasta" "I"
+				$FEPAGO_PATH_LOG "Inicio de fepago: $gOptModo $gOptBarrido $fDesde $fHasta" "I"
 				return 1
 			else
 				echo "ERROR en parametros de entrada"
+				echo $FEPAGO_PATH_LOG
 				$FEPAGO_PATH_LOG "Rango de fechas invalida" "E"
 			fi
 			#se trabaja con rango de fechas
@@ -633,7 +634,7 @@ function menuBarrido
 			if [ $? -eq 1 ]; then
 				gOptBarrido=$opt
 				#se graban en el log los parametros de inicio
-				$FEPAGO_PATH_LOG "Inicio de fepago: $gOptModo $gOptBarrido $gMontoDesde $gMontoHasta" "I"				
+				$FEPAGO_PATH_LOG "Inicio de fepago: $gOptModo $gOptBarrido $montoDesde $montoHasta" "I"				
 				return 1
 			else
 				echo "ERROR en parametros de entrada"
@@ -652,7 +653,7 @@ function menuBarrido
 			if [ $? -eq 1 ]; then
 				gOptBarrido=$opt
 				#se graban en el log los parametros de inicio
-				$FEPAGO_PATH_LOG "Inicio de fepago: $gOptModo $gOptBarrido $gFechaDesde $gFechaHasta $gMontoDesde $gMontoHasta" "I"				
+				$FEPAGO_PATH_LOG "Inicio de fepago: $gOptModo $gOptBarrido $fDesde $fHasta $montoDesde $montoHasta" "I"				
 				return 1
 			else
 				echo "ERROR en parametros de entrada"
