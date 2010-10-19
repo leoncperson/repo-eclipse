@@ -1,0 +1,3 @@
+echo '33333333333;A;4444;11222333;2010-09-20;2010-12-20;300.00;400.00;42.00;742.00' >> $grupo_inst/arribos/00000000000010 
+echo 'item gravado con 21% iva;100.00;21.00;21.00' >> $grupo_inst/arribos/00000000000010 
+echo 'item gravado con 10,5% iva falla por subtot no grav;200.00;10.50;21.00' >> $grupo_inst/arribos/00000000000010 

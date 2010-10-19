@@ -1,0 +1,751 @@
+echo '#!/bin/bash' >> $DIR/fepago 
+echo 'MSG="./glog"                 #Nombre del script que imprime mensajes en archivo de log' >> $DIR/fepago 
+echo '#constantes' >> $DIR/fepago 
+echo 'FEPAGO_PATH_LOG="glog fepago"' >> $DIR/fepago 
+echo 'A_PAGAR="A PAGAR"' >> $DIR/fepago 
+echo 'FILE_APAGAR="$GRUPO/facturas/apagar.txt"' >> $DIR/fepago 
+echo 'FILE_PRESU="$GRUPO/pp/presu.txt"' >> $DIR/fepago 
+echo 'PREFIX_APAGAR_VERSION="$GRUPO/facturas/old/apagar."' >> $DIR/fepago 
+echo 'VERSION_APAGAR="$GRUPO/facturas/old/version_apagar.dat"' >> $DIR/fepago 
+echo 'FILE_APAGAR_TEMP="$GRUPO/facturas/old/apagar.tmp"' >> $DIR/fepago 
+echo 'FILE_APAGAR_COMPROMET="$GRUPO/facturas/old/apagar.txt.tmp"' >> $DIR/fepago 
+echo 'PREFIX_PRESU_VERSION="$GRUPO/pp/old/presu."' >> $DIR/fepago 
+echo 'VERSION_PRESU="$GRUPO/facturas/old/version_presu.dat"' >> $DIR/fepago 
+echo 'FILE_PRESU_TEMP="$GRUPO/pp/old/presu.tmp"' >> $DIR/fepago 
+echo '#varibles globales' >> $DIR/fepago 
+echo 'gLineaFactura=""' >> $DIR/fepago 
+echo 'gCodigoCAE=' >> $DIR/fepago 
+echo 'gFechaVenc=' >> $DIR/fepago 
+echo 'gMontoPag=' >> $DIR/fepago 
+echo 'gEstadoFac=' >> $DIR/fepago 
+echo 'gNumLineFac=0' >> $DIR/fepago 
+echo '#parametros globales de entrada' >> $DIR/fepago 
+echo 'gFechaDesde=' >> $DIR/fepago 
+echo 'gFechaHasta=' >> $DIR/fepago 
+echo 'gMontoDesde=' >> $DIR/fepago 
+echo 'gMontoHasta=' >> $DIR/fepago 
+echo '#parametros globales de presupuesto' >> $DIR/fepago 
+echo 'gMontoFuente=' >> $DIR/fepago 
+echo '#modo de corrida' >> $DIR/fepago 
+echo 'gOptModo=' >> $DIR/fepago 
+echo 'gOptBarrido=' >> $DIR/fepago 
+echo '#nro de version' >> $DIR/fepago 
+echo 'gNroVersionPresu=0' >> $DIR/fepago 
+echo 'gNroVersionAPagar=0' >> $DIR/fepago 
+echo 'LIST_FUENTES=(11 0.0 0.0 #fuente 11' >> $DIR/fepago 
+echo '12 0.0 0.0 #fuente 12' >> $DIR/fepago 
+echo '13 0.0 0.0 #fuente 13' >> $DIR/fepago 
+echo '14 0.0 0.0 #fuente 14' >> $DIR/fepago 
+echo '15 0.0 0.0 ) #fuente 15' >> $DIR/fepago 
+echo 'export GRUPO=$PWD' >> $DIR/fepago 
+echo 'function existeFepago' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	#ver si existe otro fepago corriendo' >> $DIR/fepago 
+echo '	CNTPROC=`ps -a | grep -c fepago`' >> $DIR/fepago 
+echo '	CURRENTPID=0' >> $DIR/fepago 
+echo '#	obtenerPID' >> $DIR/fepago 
+echo '#	echo "is $CURRENTPID"' >> $DIR/fepago 
+echo '#	echo $CNTPROC' >> $DIR/fepago 
+echo '#	PID=`ps -e | grep -c "fefago"`' >> $DIR/fepago 
+echo '	#Si se encuentra que se ha ejecutado.' >> $DIR/fepago 
+echo '	if [ $CNTPROC -gt 2 ]; then' >> $DIR/fepago 
+echo '#	if [ -n "$PID" ]; then' >> $DIR/fepago 
+echo '		$FEPAGO_PATH_LOG "Se ha encontrado una instancia previa del programa fepago" "E"' >> $DIR/fepago 
+echo '		echo "Se ha encontrado una instancia previa del programa fepago"' >> $DIR/fepago 
+echo '		exit 1' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo 'function existeFeprima' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	#ver si existe otro fepago corriendo' >> $DIR/fepago 
+echo '	CNTPROC=`ps -a | grep -c feprima`' >> $DIR/fepago 
+echo '	CURRENTPID=0' >> $DIR/fepago 
+echo '#	obtenerPID' >> $DIR/fepago 
+echo '#	echo "is $CURRENTPID"' >> $DIR/fepago 
+echo '#	echo $CNTPROC' >> $DIR/fepago 
+echo '#	PID=`ps -e | grep -c "fefago"`' >> $DIR/fepago 
+echo '	#Si se encuentra que se ha ejecutado.' >> $DIR/fepago 
+echo '	if [ $CNTPROC -gt 2 ]; then' >> $DIR/fepago 
+echo '#	if [ -n "$PID" ]; then' >> $DIR/fepago 
+echo '		$FEPAGO_PATH_LOG "Se ha encontrado una instancia previa del programa feprima" "E"' >> $DIR/fepago 
+echo '		echo "Se ha encontrado una instancia previa del programa feprima"' >> $DIR/fepago 
+echo '		exit 1' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo 'function obtenerPID' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	ps x > auxiliar.txt' >> $DIR/fepago 
+echo ' 	export GREP_OPTIONS="--color=always"' >> $DIR/fepago 
+echo '	RES=`grep "bash $1" auxiliar.txt|cut -f2 -d" "`' >> $DIR/fepago 
+echo '	cat auxiliar.txt' >> $DIR/fepago 
+echo '	echo $RES' >> $DIR/fepago 
+echo '	PID=`grep "bash $1" auxiliar.txt|cut -f2 -d" "`' >> $DIR/fepago 
+echo '	#echo $1' >> $DIR/fepago 
+echo '	rm auxiliar.txt' >> $DIR/fepago 
+echo '	if [ -n $PID ] ; then' >> $DIR/fepago 
+echo '		CURRENTPID=$PID' >> $DIR/fepago 
+echo '		#echo $PID # Muestra el PID por stdout' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo 'function checkVariablesAmbiente(){' >> $DIR/fepago 
+echo '   #export GRUPO' >> $DIR/fepago 
+echo '   #export PATH_ARCH_MAEPRO' >> $DIR/fepago 
+echo '   #export PATH_ARCH_PRESU' >> $DIR/fepago 
+echo '   #export PATH_PRESU_OLD' >> $DIR/fepago 
+echo '   #export PATH_ARRIBOS' >> $DIR/fepago 
+echo '   #export PATH_FACT_RECIBIDAS' >> $DIR/fepago 
+echo '   #export PATH_FACT_RECHAZADAS' >> $DIR/fepago 
+echo '   #export PATH_FACT_ACEPTADAS' >> $DIR/fepago 
+echo '   #export PATH_ARCH_FACT_PAGAR' >> $DIR/fepago 
+echo '   #export PATH_ARCH_FACT_PAGAR_OLD' >> $DIR/fepago 
+echo '   #export PATH_LISTADOS' >> $DIR/fepago 
+echo '   #export PATH_LOG' >> $DIR/fepago 
+echo '   #export PATH_COMANDOS' >> $DIR/fepago 
+echo '	#Se ha seteado la var GRUPO?' >> $DIR/fepago 
+echo '	if test -z $GRUPO' >> $DIR/fepago 
+echo '	then' >> $DIR/fepago 
+echo '		return 1' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	#Se ha seteado la var PATH_ARCH_MAEPRO?' >> $DIR/fepago 
+echo '	if test -z $PATH_ARCH_MAEPRO' >> $DIR/fepago 
+echo '	then' >> $DIR/fepago 
+echo '		return 1' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	#Se ha seteado la var PATH_ARCH_PRESU?' >> $DIR/fepago 
+echo '	if test -z $PATH_ARCH_PRESU' >> $DIR/fepago 
+echo '	then' >> $DIR/fepago 
+echo '		return 1' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	' >> $DIR/fepago 
+echo '	#Se ha seteado la var PATH_PRESU_OLD?' >> $DIR/fepago 
+echo '	if test -z $PATH_PRESU_OLD' >> $DIR/fepago 
+echo '	then' >> $DIR/fepago 
+echo '		return 1' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	#Se ha seteado la var PATH_ARRIBOS?' >> $DIR/fepago 
+echo '	if test -z $PATH_ARRIBOS' >> $DIR/fepago 
+echo '	then' >> $DIR/fepago 
+echo '		return 1' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	#Se ha seteado la var PATH_FACT_RECIBIDAS?' >> $DIR/fepago 
+echo '	if test -z $PATH_FACT_RECIBIDAS' >> $DIR/fepago 
+echo '	then' >> $DIR/fepago 
+echo '		return 1' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	' >> $DIR/fepago 
+echo '	#Se ha seteado la var PATH_FACT_RECHAZADAS?' >> $DIR/fepago 
+echo '	if test -z $PATH_FACT_RECHAZADAS' >> $DIR/fepago 
+echo '	then' >> $DIR/fepago 
+echo '		return 1' >> $DIR/fepago 
+echo '	fi	' >> $DIR/fepago 
+echo '	#Se ha seteado la var PATH_FACT_ACEPTADAS?' >> $DIR/fepago 
+echo '	if test -z $PATH_FACT_ACEPTADAS' >> $DIR/fepago 
+echo '	then' >> $DIR/fepago 
+echo '		return 1' >> $DIR/fepago 
+echo '	fi	' >> $DIR/fepago 
+echo '	#Se ha seteado la var PATH_ARCH_FACT_PAGAR?' >> $DIR/fepago 
+echo '	if test -z $PATH_ARCH_FACT_PAGAR' >> $DIR/fepago 
+echo '	then' >> $DIR/fepago 
+echo '		return 1' >> $DIR/fepago 
+echo '	fi	' >> $DIR/fepago 
+echo '	#Se ha seteado la var PATH_ARCH_FACT_PAGAR_OLD?' >> $DIR/fepago 
+echo '	if test -z $PATH_ARCH_FACT_PAGAR_OLD' >> $DIR/fepago 
+echo '	then' >> $DIR/fepago 
+echo '		return 1' >> $DIR/fepago 
+echo '	fi	' >> $DIR/fepago 
+echo '	#Se ha seteado la var PATH_LISTADOS?' >> $DIR/fepago 
+echo '	if test -z $PATH_LISTADOS' >> $DIR/fepago 
+echo '	then' >> $DIR/fepago 
+echo '		return 1' >> $DIR/fepago 
+echo '	fi	' >> $DIR/fepago 
+echo '	#Se ha seteado la var PATH_LOG?' >> $DIR/fepago 
+echo '	if test -z $PATH_LOG' >> $DIR/fepago 
+echo '	then' >> $DIR/fepago 
+echo '		return 1' >> $DIR/fepago 
+echo '	fi	' >> $DIR/fepago 
+echo '	#Se ha seteado la var PATH_COMANDOS?' >> $DIR/fepago 
+echo '	if test -z $PATH_COMANDOS' >> $DIR/fepago 
+echo '	then' >> $DIR/fepago 
+echo '		return 1' >> $DIR/fepago 
+echo '	fi	' >> $DIR/fepago 
+echo '	' >> $DIR/fepago 
+echo '	return 0' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo 'function mostrarDisponibilidades' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	CONTADOR=0' >> $DIR/fepago 
+echo '	while [ $CONTADOR -lt 15 ]; do' >> $DIR/fepago 
+echo '		echo Fuente: ${LIST_FUENTES[$CONTADOR]} Disponibilidad Inicial: ${LIST_FUENTES[$((CONTADOR+1))]} Disponibilidad Final: ${LIST_FUENTES[$((CONTADOR+2))]}' >> $DIR/fepago 
+echo '		let CONTADOR=CONTADOR+3' >> $DIR/fepago 
+echo '	done' >> $DIR/fepago 
+echo '	return 1' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '#muestra los comprometidos luego borra el temporal' >> $DIR/fepago 
+echo 'function mostrarComprometidos' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	while read line' >> $DIR/fepago 
+echo '	do' >> $DIR/fepago 
+echo '		echo $line' >> $DIR/fepago 
+echo '	done < $FILE_APAGAR_COMPROMET' >> $DIR/fepago 
+echo '	#echo CAE: vencimiento: monto: estadoActualizado:' >> $DIR/fepago 
+echo '	rm -f $FILE_APAGAR_COMPROMET' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '#carga el vecto global de fuentes' >> $DIR/fepago 
+echo 'function loadVectorFuentes' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	CONTADOR=0' >> $DIR/fepago 
+echo '	while [ $CONTADOR -lt 15 ]; do' >> $DIR/fepago 
+echo '		nroFte=${LIST_FUENTES[$CONTADOR]}' >> $DIR/fepago 
+echo '		getMontoxFuente $FILE_PRESU $nroFte' >> $DIR/fepago 
+echo '		#valor inicial' >> $DIR/fepago 
+echo '		LIST_FUENTES[$((CONTADOR+1))]=$gMontoFuente' >> $DIR/fepago 
+echo '		#valor final por ahora' >> $DIR/fepago 
+echo '		LIST_FUENTES[$((CONTADOR+2))]=$gMontoFuente' >> $DIR/fepago 
+echo '		let CONTADOR=CONTADOR+3' >> $DIR/fepago 
+echo '	done' >> $DIR/fepago 
+echo '	return 1' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '	' >> $DIR/fepago 
+echo '# $1 nro de fuente' >> $DIR/fepago 
+echo '# $2 valor inicial a cargar' >> $DIR/fepago 
+echo 'function loadFuenteInicial' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	CONTADOR=$1' >> $DIR/fepago 
+echo '	CONTADOR=$((CONTADOR-11))' >> $DIR/fepago 
+echo '	valor=$2' >> $DIR/fepago 
+echo '	LIST_FUENTES[$((CONTADOR+1))]=$valor' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '# $1 nro de fuente' >> $DIR/fepago 
+echo '# $2 valor final a cargar' >> $DIR/fepago 
+echo 'function loadFuenteFinal' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	CONTADOR=$1' >> $DIR/fepago 
+echo '	CONTADOR=$((CONTADOR-11))' >> $DIR/fepago 
+echo '	valor=$2' >> $DIR/fepago 
+echo '	LIST_FUENTES[$((CONTADOR+2))]=$valor' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '# $1 nombre del archivo' >> $DIR/fepago 
+echo '# $2 nro de fuente a buscar' >> $DIR/fepago 
+echo '#si la fuente no existe retorna 0' >> $DIR/fepago 
+echo 'function getMontoxFuente' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '#linea de presu.txt' >> $DIR/fepago 
+echo '#fuente;montoDisponible;fechaUltModif;userUltModif' >> $DIR/fepago 
+echo '	fuente=$2' >> $DIR/fepago 
+echo '	while read line' >> $DIR/fepago 
+echo '	do ' >> $DIR/fepago 
+echo '		fuenteLine=`echo "$line" | sed "s/^\([0-9]\{2\}\);.*/\1/"`	   ' >> $DIR/fepago 
+echo '		montoDispo=`echo "$line" | sed "s/^\([0-9]\{2\}\);\([0-9]*\.[0-9]\{2\}\);.*/\2/"`	   ' >> $DIR/fepago 
+echo '		if [ "$fuente" = "$fuenteLine" ]' >> $DIR/fepago 
+echo '		then' >> $DIR/fepago 
+echo '			gMontoFuente=$montoDispo' >> $DIR/fepago 
+echo '			return 1' >> $DIR/fepago 
+echo '		fi' >> $DIR/fepago 
+echo '	done < $1' >> $DIR/fepago 
+echo '	return 0' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '#checkea la disponibilidad contra el archivo de' >> $DIR/fepago 
+echo '#presupuesto' >> $DIR/fepago 
+echo '# $1 monto de disponibilidad' >> $DIR/fepago 
+echo 'function checkDispo' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	montoPag=$1' >> $DIR/fepago 
+echo '	getFuenteByRango $montoPag' >> $DIR/fepago 
+echo '	nroFte=$?' >> $DIR/fepago 
+echo '	getMontoxFuente $FILE_PRESU $nroFte' >> $DIR/fepago 
+echo '	if [ $? -eq 1 ] ; then' >> $DIR/fepago 
+echo '		montoFte=$gMontoFuente' >> $DIR/fepago 
+echo '		if [ `echo "$montoPag > $montoFte" | bc -l` = "1" ]; then' >> $DIR/fepago 
+echo '			return 0' >> $DIR/fepago 
+echo '		else' >> $DIR/fepago 
+echo '			return 1' >> $DIR/fepago 
+echo '		fi	' >> $DIR/fepago 
+echo '	else' >> $DIR/fepago 
+echo '		#la fuente no existe' >> $DIR/fepago 
+echo '		$FEPAGO_PATH_LOG "El numero de fuente no existe en el archivo presu.txt" "E"' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '# $1 valor a restar de la disponibilidad' >> $DIR/fepago 
+echo 'function updateDispo' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	montoPag=$1' >> $DIR/fepago 
+echo '	getFuenteByRango $montoPag' >> $DIR/fepago 
+echo '	nroFte=$?' >> $DIR/fepago 
+echo '	getMontoxFuente $FILE_PRESU $nroFte' >> $DIR/fepago 
+echo '	if [ $? -eq 1 ] ; then' >> $DIR/fepago 
+echo '		montoFte=$gMontoFuente' >> $DIR/fepago 
+echo '		if [ `echo "$montoPag > $montoFte" | bc -l` = "1" ]; then' >> $DIR/fepago 
+echo '			return 0' >> $DIR/fepago 
+echo '		else' >> $DIR/fepago 
+echo '			diferMonto=`echo "$montoFte-$montoPag" | bc`' >> $DIR/fepago 
+echo '			sed $FILE_PRESU -e "s/$nroFte;\([0-9]*.[0-9]\{2\}\);/$nroFte;$diferMonto;/g" > $FILE_PRESU_TEMP' >> $DIR/fepago 
+echo '			cat $FILE_PRESU_TEMP > $FILE_PRESU' >> $DIR/fepago 
+echo '			rm -f $FILE_PRESU_TEMP' >> $DIR/fepago 
+echo '			#se actualiza las disponibilidades finales' >> $DIR/fepago 
+echo '			loadFuenteFinal $nroFte $diferMonto' >> $DIR/fepago 
+echo '			return 1' >> $DIR/fepago 
+echo '		fi	' >> $DIR/fepago 
+echo '	else' >> $DIR/fepago 
+echo '		#la fuente no existe' >> $DIR/fepago 
+echo '		$FEPAGO_PATH_LOG "El numero de fuente no existe en el archivo presu.txt	" "E"' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '# $1 indicador de modificacion de factura' >> $DIR/fepago 
+echo '# $2 indica si la linea cumplio con la condicion' >> $DIR/fepago 
+echo 'function insertTempAPagar' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	bChange=$2' >> $DIR/fepago 
+echo '	if [ $bChange -eq 1 ] ; then' >> $DIR/fepago 
+echo '		bUpdateFactura=$1' >> $DIR/fepago 
+echo '		if [ $bUpdateFactura -eq 1 ] ; then' >> $DIR/fepago 
+echo '			echo "$gCodigoCAE;$gFechaVenc;$gMontoPag;LIBERADA" >> $FILE_APAGAR_TEMP' >> $DIR/fepago 
+echo '		else' >> $DIR/fepago 
+echo '			echo "$gCodigoCAE;$gFechaVenc;$gMontoPag;A PAGAR" >> $FILE_APAGAR_TEMP' >> $DIR/fepago 
+echo '		fi' >> $DIR/fepago 
+echo '	else' >> $DIR/fepago 
+echo '		echo "$gCodigoCAE;$gFechaVenc;$gMontoPag;$gEstadoFac" >> $FILE_APAGAR_TEMP' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '#actualiza el archivo de facturas "apagar.txt"' >> $DIR/fepago 
+echo 'function updateAPagar' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	#copia y borra el temporal' >> $DIR/fepago 
+echo '	mv $FILE_APAGAR_TEMP $FILE_APAGAR' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '# $1 flag de modificacion de linea de factura' >> $DIR/fepago 
+echo '# $2 flag de comprometido o NO' >> $DIR/fepago 
+echo '#guarda solo las facturas comprometidas' >> $DIR/fepago 
+echo 'function insertComprometido' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	bCompromet=$2' >> $DIR/fepago 
+echo '	if [ $bCompromet -eq 1 ] ; then' >> $DIR/fepago 
+echo '		bUpdateFactura=$1' >> $DIR/fepago 
+echo '		if [ $bUpdateFactura -eq 1 ] ; then' >> $DIR/fepago 
+echo '			echo "$gCodigoCAE;$gFechaVenc;$gMontoPag;LIBERADA" >> $FILE_APAGAR_COMPROMET' >> $DIR/fepago 
+echo '		else' >> $DIR/fepago 
+echo '			echo "$gCodigoCAE;$gFechaVenc;$gMontoPag;A PAGAR" >> $FILE_APAGAR_COMPROMET' >> $DIR/fepago 
+echo '		fi' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '# recorre el archivo de facturas' >> $DIR/fepago 
+echo '# $1 nombre de archivo' >> $DIR/fepago 
+echo '# $2 estado de busqueda' >> $DIR/fepago 
+echo '# $3 opt del menu de barrido' >> $DIR/fepago 
+echo 'function recorrerFacturas' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	#se borra el temporal por si estaba' >> $DIR/fepago 
+echo '	rm -f $FILE_APAGAR_TEMP' >> $DIR/fepago 
+echo '	gNumLineFac=0' >> $DIR/fepago 
+echo '	#-------------------copia facturas' >> $DIR/fepago 
+echo '	nextNroVersion $VERSION_APAGAR' >> $DIR/fepago 
+echo '	versionAPagar=$?' >> $DIR/fepago 
+echo '	cp $FILE_APAGAR $PREFIX_APAGAR_VERSION$versionAPagar' >> $DIR/fepago 
+echo '	#-------------------' >> $DIR/fepago 
+echo '	if [ $gOptModo = "Actualizacion" ] ; then' >> $DIR/fepago 
+echo '		#-------------------copia presupuesto' >> $DIR/fepago 
+echo '		nextNroVersion $VERSION_PRESU' >> $DIR/fepago 
+echo '		versionPresu=$?' >> $DIR/fepago 
+echo '		cp $FILE_PRESU $PREFIX_PRESU_VERSION$versionPresu' >> $DIR/fepago 
+echo '		#-------------------' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	numLine=0	' >> $DIR/fepago 
+echo '	estado=$2' >> $DIR/fepago 
+echo '	opt=$3' >> $DIR/fepago 
+echo '	while read line' >> $DIR/fepago 
+echo '	do' >> $DIR/fepago 
+echo '		bCompromet=0' >> $DIR/fepago 
+echo '		bChange=0' >> $DIR/fepago 
+echo '		bUpdateFactura=0' >> $DIR/fepago 
+echo '		procFileFacturaAPagar $estado $numLine $line' >> $DIR/fepago 
+echo '		# 1ero se filtra por estado "A PAGAR"	' >> $DIR/fepago 
+echo '		if [ $? -eq 1 ]; then' >> $DIR/fepago 
+echo '			checkCondicion $opt' >> $DIR/fepago 
+echo '			# 2do se filtra por la condicion de barrido' >> $DIR/fepago 
+echo '			if [ $? -eq 1 ]; then' >> $DIR/fepago 
+echo '				bCompromet=1' >> $DIR/fepago 
+echo '				if [ $gOptModo = "Actualizacion" ] ; then' >> $DIR/fepago 
+echo '					# 3ero se filtra por la disponibilidad' >> $DIR/fepago 
+echo '					checkDispo $gMontoPag' >> $DIR/fepago 
+echo '					if [ $? -eq 1 ]; then' >> $DIR/fepago 
+echo '						updateDispo $gMontoPag' >> $DIR/fepago 
+echo '						bUpdateFactura=1' >> $DIR/fepago 
+echo '						bChange=1' >> $DIR/fepago 
+echo '					fi' >> $DIR/fepago 
+echo '#				elif [ $gOptModo = "Simulacion" ] ; then' >> $DIR/fepago 
+echo '#					echo ES Simulacion' >> $DIR/fepago 
+echo '				fi' >> $DIR/fepago 
+echo '			fi' >> $DIR/fepago 
+echo '		fi' >> $DIR/fepago 
+echo '		#se actualiza apagar.txt' >> $DIR/fepago 
+echo '		insertComprometido $bUpdateFactura $bCompromet' >> $DIR/fepago 
+echo '		insertTempAPagar $bUpdateFactura $bChange' >> $DIR/fepago 
+echo '	done < $1' >> $DIR/fepago 
+echo '	updateAPagar' >> $DIR/fepago 
+echo '	return 1' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '#recorre el archivo de facturas y busca los registros' >> $DIR/fepago 
+echo '# $1 estado a buscar' >> $DIR/fepago 
+echo '# $2 numero de linea' >> $DIR/fepago 
+echo '# $3 linea a procesar ' >> $DIR/fepago 
+echo '#buscar desde el nro de linea global gNumLineFac' >> $DIR/fepago 
+echo 'function procFileFacturaAPagar' >> $DIR/fepago 
+echo '{	' >> $DIR/fepago 
+echo '	estado=$1' >> $DIR/fepago 
+echo '	numLine=$2' >> $DIR/fepago 
+echo '	numLine=$((numLine+1))' >> $DIR/fepago 
+echo '	#line=$3' >> $DIR/fepago 
+echo '	codigoCAE=`echo "$line" | sed "s/^\([0-9]\{14\}\);.*/\1/"`	   ' >> $DIR/fepago 
+echo '	fechaVenc=`echo "$line" | sed "s/^\([0-9]\{14\}\);\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\);.*/\2/"`	   ' >> $DIR/fepago 
+echo '	montoPag=`echo "$line" | sed "s/^\([0-9]\{14\}\);\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\);\([0-9]*\.[0-9]\{2\}\).*/\3/"`   ' >> $DIR/fepago 
+echo '#	estadoFac=`echo "$line" | sed "s/^\([0-9]\{14\}\);\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\);\([0-9]*\.[0-9]\{2\}\);\([A-Z ]\)/\4/"`' >> $DIR/fepago 
+echo '	estadoFac=`echo "$line" | sed "s/^[^;]*;[^;]*;[^;]*;\([^;]*\).*$/\1/"`' >> $DIR/fepago 
+echo '# 	estadoFac=`echo "$line" | cut -d";" -f4` `' >> $DIR/fepago 
+echo '	if [ `echo "$numLine > $gNumLineFac" | bc -l` = "1" ]; then' >> $DIR/fepago 
+echo '		if [ "$estadoFac" = "A PAGAR" ]; then' >> $DIR/fepago 
+echo '			gCodigoCAE=$codigoCAE' >> $DIR/fepago 
+echo '			gFechaVenc=$fechaVenc' >> $DIR/fepago 
+echo '			gMontoPag=$montoPag' >> $DIR/fepago 
+echo '			gEstadoFac=$estadoFac' >> $DIR/fepago 
+echo '			gNumLineFac=$numLine' >> $DIR/fepago 
+echo '			gLineaFactura=$line			' >> $DIR/fepago 
+echo '			return 1' >> $DIR/fepago 
+echo '		fi' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	return 0' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '# $1 valor a comparar' >> $DIR/fepago 
+echo '#retorna el tipo de fuente segun en que rango este el valor' >> $DIR/fepago 
+echo '#retorna 0 si  no encuentra ninguna' >> $DIR/fepago 
+echo 'function getFuenteByRango' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	valor=$1' >> $DIR/fepago 
+echo '	if [ `echo "1000.00 > $valor" | bc -l` = "1" ]; then' >> $DIR/fepago 
+echo '		return 11' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	if [ `echo "$valor >= 1000.00 && 10000.00 > $valor" | bc -l` -eq 1 ]; then' >> $DIR/fepago 
+echo '		return 12' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	if [ `echo "$valor>=10000.00 && 50000.00>$valor" | bc -l` -eq 1 ]; then	' >> $DIR/fepago 
+echo '		return 13' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	if [ `echo "$valor>=50000.00 && 150000.00>$valor" | bc -l` -eq 1 ]; then	' >> $DIR/fepago 
+echo '		return 14' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	if [ `echo "$valor>=150000.00" | bc -l` -eq 1 ]; then		' >> $DIR/fepago 
+echo '		return 15' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	return 0' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '#controla los parametros de entrada' >> $DIR/fepago 
+echo 'function mainCheck' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	checkVariablesAmbiente' >> $DIR/fepago 
+echo '	if [ $? -ne 0 ]' >> $DIR/fepago 
+echo '	then ' >> $DIR/fepago 
+echo '		$FEPAGO_PATH_LOG "Faltan inicializar variables de ambiente" "E"' >> $DIR/fepago 
+echo '		#Intento de mover un archivo que no existe en arribos' >> $DIR/fepago 
+echo '		exit 0' >> $DIR/fepago 
+echo '		#return $retcode ' >> $DIR/fepago 
+echo '	fi ' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '#recibe un argumento $1 que contiene la fecha a validar' >> $DIR/fepago 
+echo '#retorna 1 si es valida' >> $DIR/fepago 
+echo '#retorna 0 si es invalida' >> $DIR/fepago 
+echo 'function validFecha' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	fechaV=$1' >> $DIR/fepago 
+echo '	fechaV=`echo "$fechaV" | grep "^\(19\|20\)[0-9][0-9]-\(0[1-9]\|1[012]\)-\(0[1-9]\|[12][0-9]\|3[01]\)$"`' >> $DIR/fepago 
+echo ' 	if test -z $fechaV ; then' >> $DIR/fepago 
+echo ' 		return 0' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	return 1' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '#recibe un argumento $1 que contiene el monto a validar' >> $DIR/fepago 
+echo '#retorna 1 si es valido' >> $DIR/fepago 
+echo '#retorna 0 si es invalido' >> $DIR/fepago 
+echo 'function validMonto' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	line=$1' >> $DIR/fepago 
+echo '	montoTemp=`echo "$line" | grep "^\([0-9]*\.[0-9][0-9]\)$"`' >> $DIR/fepago 
+echo '	' >> $DIR/fepago 
+echo '	if test -z $montoTemp' >> $DIR/fepago 
+echo '	then' >> $DIR/fepago 
+echo '		return 0' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	return 1' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '#obtiene la version del archivo' >> $DIR/fepago 
+echo '#actualiza el nro de version' >> $DIR/fepago 
+echo '#si no existe lo crea' >> $DIR/fepago 
+echo '# $1 nombre del archivo donde se guarda el nro de version' >> $DIR/fepago 
+echo 'function nextNroVersion' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	nroVersion=0' >> $DIR/fepago 
+echo '	archivo=$1' >> $DIR/fepago 
+echo '	#si el archivo no existe' >> $DIR/fepago 
+echo '	if test -f $archivo' >> $DIR/fepago 
+echo '	then' >> $DIR/fepago 
+echo '		nroVersion=`head -n 1 $archivo`' >> $DIR/fepago 
+echo '	else' >> $DIR/fepago 
+echo '		#se crea la version 1' >> $DIR/fepago 
+echo '		echo "1">$archivo' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	#se obtiene el nro de version y se actualiza' >> $DIR/fepago 
+echo '	echo $((nroVersion+1))>$archivo' >> $DIR/fepago 
+echo '	return $nroVersion' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '#esta funcion lee 2 parametros y los valida' >> $DIR/fepago 
+echo '#$2 fechaDesde' >> $DIR/fepago 
+echo '#$3 fechaHasta' >> $DIR/fepago 
+echo 'function validRangoFechas' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	validFecha $1' >> $DIR/fepago 
+echo '	if [ $? -eq 1 ]; then' >> $DIR/fepago 
+echo '		validFecha $2' >> $DIR/fepago 
+echo '		if [ $? -eq 1 ]; then' >> $DIR/fepago 
+echo '			#ambas son validas' >> $DIR/fepago 
+echo '			fechaDesde=$(echo $1 | cut -d"-" -f1)$(echo $1 | cut -d"-" -f2)$(echo $1 | cut -d"-" -f3)' >> $DIR/fepago 
+echo '			fechaHasta=$(echo $2 | cut -d"-" -f1)$(echo $2 | cut -d"-" -f2)$(echo $2 | cut -d"-" -f3)' >> $DIR/fepago 
+echo '			#controlar rango' >> $DIR/fepago 
+echo '			if [ "$fechaDesde" -le "$fechaHasta" ]; then' >> $DIR/fepago 
+echo '				gFechaDesde=$fechaDesde' >> $DIR/fepago 
+echo '				gFechaHasta=$fechaHasta' >> $DIR/fepago 
+echo '				return 1' >> $DIR/fepago 
+echo '			fi			' >> $DIR/fepago 
+echo '		fi' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	return 0' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '#esta funcion lee 2 parametros' >> $DIR/fepago 
+echo '#$1 montoDesde' >> $DIR/fepago 
+echo '#$2 montoHasta' >> $DIR/fepago 
+echo 'function validRangoMontos' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	validMonto $1' >> $DIR/fepago 
+echo '	if [ $? -eq 1 ]; then	' >> $DIR/fepago 
+echo '		validMonto $2' >> $DIR/fepago 
+echo '		if [ $? -eq 1 ]; then' >> $DIR/fepago 
+echo '			#ambas son validas' >> $DIR/fepago 
+echo '			montoDesde=$1' >> $DIR/fepago 
+echo '			montoHasta=$2' >> $DIR/fepago 
+echo '			#controlar rango' >> $DIR/fepago 
+echo '			if [ `echo "$montoDesde > $montoHasta" | bc -l` = "1" ]; then' >> $DIR/fepago 
+echo '				return 0' >> $DIR/fepago 
+echo '			else' >> $DIR/fepago 
+echo '				gMontoDesde=$montoDesde' >> $DIR/fepago 
+echo '				gMontoHasta=$montoHasta' >> $DIR/fepago 
+echo '				return 1' >> $DIR/fepago 
+echo '			fi			' >> $DIR/fepago 
+echo '		fi' >> $DIR/fepago 
+echo '	fi	' >> $DIR/fepago 
+echo '	return 0' >> $DIR/fepago 
+echo '	' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '#esta funcion lee de consola 4 parametros' >> $DIR/fepago 
+echo '#$1 fechaDesde' >> $DIR/fepago 
+echo '#$2 fechaHasta' >> $DIR/fepago 
+echo '#$3 montoDesde' >> $DIR/fepago 
+echo '#$4 montoHasta' >> $DIR/fepago 
+echo 'function validRangoFechasMontos' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	validFecha $1' >> $DIR/fepago 
+echo '	if [ $? -eq 1 ]; then' >> $DIR/fepago 
+echo '		validFecha $2' >> $DIR/fepago 
+echo '		if [ $? -eq 1 ]; then' >> $DIR/fepago 
+echo '			validMonto $3' >> $DIR/fepago 
+echo '			if [ $? -eq 1 ]; then' >> $DIR/fepago 
+echo '				validMonto $4' >> $DIR/fepago 
+echo '				if [ $? -eq 1 ]; then' >> $DIR/fepago 
+echo '					gFechaDesde=$1' >> $DIR/fepago 
+echo '					gFechaHasta=$2' >> $DIR/fepago 
+echo '					gMontoDesde=$3' >> $DIR/fepago 
+echo '					gMontoHasta=$4' >> $DIR/fepago 
+echo '					return 1' >> $DIR/fepago 
+echo '				fi' >> $DIR/fepago 
+echo '			fi' >> $DIR/fepago 
+echo '		fi' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	return 0;' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '#controla la condicion del registro de factura' >> $DIR/fepago 
+echo '# $1:opt opcion del menu [Fecha,Importe,Fecha_importe]' >> $DIR/fepago 
+echo 'function checkCondicion' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	opt=$1' >> $DIR/fepago 
+echo '	if [ "$opt" = "Fechas" ]; then' >> $DIR/fepago 
+echo '		#recibe fechaDesde,fechaHasta valorFecha' >> $DIR/fepago 
+echo '		checkCondicionFechas $gFechaDesde $gFechaHasta $gFechaVenc' >> $DIR/fepago 
+echo '		return $?' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	if [ "$opt" = "Importes" ]; then' >> $DIR/fepago 
+echo '		#recibe montoDesde,montoHasta valorMonto' >> $DIR/fepago 
+echo '		checkCondicionMontos $gMontoDesde $gMontoHasta $gMontoPag' >> $DIR/fepago 
+echo '		return $?' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	if [ "$opt" = "Fechas_Importes" ]; then' >> $DIR/fepago 
+echo '		#recibe fechaDesde,fechaHasta valorFecha' >> $DIR/fepago 
+echo '		checkCondicionFechas $gFechaDesde $gFechaHasta $gFechaVenc' >> $DIR/fepago 
+echo '		#si cumple la condion de fechas' >> $DIR/fepago 
+echo '		if [ $? -eq 1 ]; then' >> $DIR/fepago 
+echo '			#recibe montoDesde,montoHasta valorMonto' >> $DIR/fepago 
+echo '			checkCondicionMontos $gMontoDesde $gMontoHasta $gMontoPag' >> $DIR/fepago 
+echo '			return $?			' >> $DIR/fepago 
+echo '		else' >> $DIR/fepago 
+echo '			return $?' >> $DIR/fepago 
+echo '		fi' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '	return 0	' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '#esta funcion checkea que el valor este dentro del rango de fecha' >> $DIR/fepago 
+echo '# $1:fechaDesde' >> $DIR/fepago 
+echo '# $2:fechaHasta' >> $DIR/fepago 
+echo '# $3:valorFecha' >> $DIR/fepago 
+echo '#retorna 1 si cumple la condicion' >> $DIR/fepago 
+echo '#retorna 0 si NO cumple' >> $DIR/fepago 
+echo 'function checkCondicionFechas' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	fechaDesde=$1' >> $DIR/fepago 
+echo '	fechaHasta=$2' >> $DIR/fepago 
+echo '	valorFecha=$(echo $3 | cut -d"-" -f1)$(echo $3 | cut -d"-" -f2)$(echo $3 | cut -d"-" -f3)' >> $DIR/fepago 
+echo '	if [ "$fechaDesde" -le "$valorFecha" -a "$valorFecha" -le "$fechaHasta"  ]; then' >> $DIR/fepago 
+echo '		return 1' >> $DIR/fepago 
+echo '	else' >> $DIR/fepago 
+echo '		return 0' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '#esta funcion checkea que el valor este dentro del rango de montos' >> $DIR/fepago 
+echo '# $1:montoDesde' >> $DIR/fepago 
+echo '# $2:montoHasta' >> $DIR/fepago 
+echo '# $3:valorMonto' >> $DIR/fepago 
+echo '#retorna 1 si cumple la condicion' >> $DIR/fepago 
+echo '#retorna 0 si NO cumple' >> $DIR/fepago 
+echo 'function checkCondicionMontos' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	montoDesde=$1' >> $DIR/fepago 
+echo '	montoHasta=$2' >> $DIR/fepago 
+echo '	valorMonto=$3' >> $DIR/fepago 
+echo '	if [ `echo "$montoDesde  > $valorMonto" | bc` = "1" ]; then' >> $DIR/fepago 
+echo '		return 0' >> $DIR/fepago 
+echo '	else' >> $DIR/fepago 
+echo '		if [ `echo "$valorMonto > $montoHasta" | bc` = "1" ]; then' >> $DIR/fepago 
+echo '			return 0' >> $DIR/fepago 
+echo '		else' >> $DIR/fepago 
+echo '			return 1' >> $DIR/fepago 
+echo '		fi' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo '	#muestra un menu de modos' >> $DIR/fepago 
+echo '#retorna la opcion elegida' >> $DIR/fepago 
+echo 'function menuModos' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	OPCIONES_MODO="Simulacion Actualizacion Salir"' >> $DIR/fepago 
+echo '	select opt in $OPCIONES_MODO; do' >> $DIR/fepago 
+echo '		if [ "$opt" = "Simulacion" ]; then' >> $DIR/fepago 
+echo '			gOptModo="Simulacion"' >> $DIR/fepago 
+echo '			return 1' >> $DIR/fepago 
+echo '		elif [ "$opt" = "Actualizacion" ]; then' >> $DIR/fepago 
+echo '			gOptModo="Actualizacion"' >> $DIR/fepago 
+echo '			return 2' >> $DIR/fepago 
+echo '		elif [ "$opt" = "Salir" ]; then' >> $DIR/fepago 
+echo '			gOptModo="Salir"' >> $DIR/fepago 
+echo '			return 100' >> $DIR/fepago 
+echo '		else' >> $DIR/fepago 
+echo '			#clear' >> $DIR/fepago 
+echo '			echo opcion erronea' >> $DIR/fepago 
+echo '		fi' >> $DIR/fepago 
+echo '	done' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo 'function menuBarrido' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	#se presenta el menu' >> $DIR/fepago 
+echo '	OPCIONES_BARRIDO="Fechas Importes Fechas_Importes Salir"' >> $DIR/fepago 
+echo '	select opt in $OPCIONES_BARRIDO; do' >> $DIR/fepago 
+echo '		if [ "$opt" = "Salir" ]; then' >> $DIR/fepago 
+echo '			return 0' >> $DIR/fepago 
+echo '		elif [ "$opt" = "Fechas" ]; then' >> $DIR/fepago 
+echo '			echo "Fechas"' >> $DIR/fepago 
+echo '			echo formato AAAA-MM-DD' >> $DIR/fepago 
+echo '			echo Ingrese [fechaDesde]' >> $DIR/fepago 
+echo '			read fDesde' >> $DIR/fepago 
+echo '			echo Ingrese [fechaHasta]' >> $DIR/fepago 
+echo '			read fHasta' >> $DIR/fepago 
+echo '			validRangoFechas $fDesde $fHasta' >> $DIR/fepago 
+echo '			if [ $? -eq 1 ]; then' >> $DIR/fepago 
+echo '				gOptBarrido=$opt' >> $DIR/fepago 
+echo '				#se graban en el log los parametros de inicio' >> $DIR/fepago 
+echo '				$FEPAGO_PATH_LOG "Inicio de fepago: $gOptModo $gOptBarrido $fDesde $fHasta" "I"' >> $DIR/fepago 
+echo '				return 1' >> $DIR/fepago 
+echo '			else' >> $DIR/fepago 
+echo '				echo "ERROR en parametros de entrada"' >> $DIR/fepago 
+echo '				$FEPAGO_PATH_LOG "Rango de fechas invalida" "E"' >> $DIR/fepago 
+echo '			fi' >> $DIR/fepago 
+echo '			#se trabaja con rango de fechas' >> $DIR/fepago 
+echo '		elif [ "$opt" = "Importes" ]; then' >> $DIR/fepago 
+echo '			echo "Importes"' >> $DIR/fepago 
+echo '			echo "Ingrese [montoDesde] [montoHasta]"' >> $DIR/fepago 
+echo '			echo "formato XXX X.XX"' >> $DIR/fepago 
+echo '			read montoDesde' >> $DIR/fepago 
+echo '			read montoHasta' >> $DIR/fepago 
+echo '			validRangoMontos $montoDesde $montoHasta' >> $DIR/fepago 
+echo '			if [ $? -eq 1 ]; then' >> $DIR/fepago 
+echo '				gOptBarrido=$opt' >> $DIR/fepago 
+echo '				#se graban en el log los parametros de inicio' >> $DIR/fepago 
+echo '				$FEPAGO_PATH_LOG "Inicio de fepago: $gOptModo $gOptBarrido $montoDesde $montoHasta" "I"				' >> $DIR/fepago 
+echo '				return 1' >> $DIR/fepago 
+echo '			else' >> $DIR/fepago 
+echo '				echo "ERROR en parametros de entrada"' >> $DIR/fepago 
+echo '				$FEPAGO_PATH_LOG "Rango de importes invalido" "E"' >> $DIR/fepago 
+echo '			fi' >> $DIR/fepago 
+echo '			#se trabaja con rango de Importes' >> $DIR/fepago 
+echo '		elif [ "$opt" = "Fechas_Importes" ]; then' >> $DIR/fepago 
+echo '			echo "Fechas_Importes"' >> $DIR/fepago 
+echo '			echo Ingrese [fechaDesde] [fechaHasta] [montoDesde] [montoHasta]' >> $DIR/fepago 
+echo '			echo formato AAAA-MM-DD XXXXXXXX.XX' >> $DIR/fepago 
+echo '			read fDesde' >> $DIR/fepago 
+echo '			read fHasta' >> $DIR/fepago 
+echo '			read montoDesde' >> $DIR/fepago 
+echo '			read montoHasta' >> $DIR/fepago 
+echo '			validRangoFechasMontos $fDesde $fHasta $montoDesde $montoHasta' >> $DIR/fepago 
+echo '			if [ $? -eq 1 ]; then' >> $DIR/fepago 
+echo '				gOptBarrido=$opt' >> $DIR/fepago 
+echo '				#se graban en el log los parametros de inicio' >> $DIR/fepago 
+echo '				$FEPAGO_PATH_LOG "Inicio de fepago: $gOptModo $gOptBarrido $fDesde $fHasta $montoDesde $montoHasta" "I"				' >> $DIR/fepago 
+echo '				return 1' >> $DIR/fepago 
+echo '			else' >> $DIR/fepago 
+echo '				echo "ERROR en parametros de entrada"' >> $DIR/fepago 
+echo '				$FEPAGO_PATH_LOG "Rango de fechas/importes invalido" "E"' >> $DIR/fepago 
+echo '			fi' >> $DIR/fepago 
+echo '			#se trabaja con rango de Fechas_Importes' >> $DIR/fepago 
+echo '		else' >> $DIR/fepago 
+echo '			#clear' >> $DIR/fepago 
+echo '			echo opcion erronea' >> $DIR/fepago 
+echo '		fi' >> $DIR/fepago 
+echo '	done' >> $DIR/fepago 
+echo '	return 0' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo 'function mainPrincipal' >> $DIR/fepago 
+echo '{' >> $DIR/fepago 
+echo '	existeFepago' >> $DIR/fepago 
+echo '	existeFeprima' >> $DIR/fepago 
+echo '	if [ $GRUPO ]; then' >> $DIR/fepago 
+echo '		while [ 1 ]; do' >> $DIR/fepago 
+echo '			menuModos' >> $DIR/fepago 
+echo '			if [ $? -eq 100 ]; then ' >> $DIR/fepago 
+echo '				echo "FIN DE EJECUCION"' >> $DIR/fepago 
+echo '				return' >> $DIR/fepago 
+echo '			fi' >> $DIR/fepago 
+echo '			menuBarrido' >> $DIR/fepago 
+echo '			if [ $? -eq 100 ]; then ' >> $DIR/fepago 
+echo '				echo "FIN DE EJECUCION"' >> $DIR/fepago 
+echo '				return' >> $DIR/fepago 
+echo '			fi' >> $DIR/fepago 
+echo '			loadVectorFuentes' >> $DIR/fepago 
+echo '			recorrerFacturas $FILE_APAGAR "A PAGAR" $gOptBarrido' >> $DIR/fepago 
+echo '			mostrarComprometidos' >> $DIR/fepago 
+echo '			mostrarDisponibilidades' >> $DIR/fepago 
+echo '		done' >> $DIR/fepago 
+echo '	else' >> $DIR/fepago 
+echo '		exit 1' >> $DIR/fepago 
+echo '	fi' >> $DIR/fepago 
+echo '}' >> $DIR/fepago 
+echo 'mainPrincipal' >> $DIR/fepago 

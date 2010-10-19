@@ -1,0 +1,132 @@
+echo '#!/bin/bash' >> $DIR/fepini 
+echo '#Codigos de Retorno' >> $DIR/fepini 
+echo 'OK=0' >> $DIR/fepini 
+echo 'PERL_NO_INSTALADO=1' >> $DIR/fepini 
+echo 'AMBIENTE_YA_INICILIZADO=2' >> $DIR/fepini 
+echo 'ARCHIVO_PROV_NO_EXISTE=3' >> $DIR/fepini 
+echo 'ARCHIVO_PRESUP_NO_EXISTE=4' >> $DIR/fepini 
+echo 'DEMONIO_YA_ESTA_CORRIENDO=5' >> $DIR/fepini 
+echo '#inicializo el codigo de retorno' >> $DIR/fepini 
+echo 'returncode=$OK' >> $DIR/fepini 
+echo '# ---------------------' >> $DIR/fepini 
+echo '# -- Checkeo de grupo --' >> $DIR/fepini 
+echo '# ---------------------' >> $DIR/fepini 
+echo 'echo ""' >> $DIR/fepini 
+echo 'echo "Verificando que Perl este instalado..."' >> $DIR/fepini 
+echo 'vperl=`/usr/bin/perl -v`' >> $DIR/fepini 
+echo 'vp1=`echo ${vperl#*[Vv]}`' >> $DIR/fepini 
+echo 'vp2=`echo ${vp1%% *}`' >> $DIR/fepini 
+echo 'version=`echo ${vp2%%.*}`' >> $DIR/fepini 
+echo 'if [ -z $version ]; then' >> $DIR/fepini 
+echo '	version=0' >> $DIR/fepini 
+echo 'fi' >> $DIR/fepini 
+echo 'if [ $version -lt 5 ]; then' >> $DIR/fepini 
+echo '	clear' >> $DIR/fepini 
+echo '	echo ""' >> $DIR/fepini 
+echo '	echo "ERROR !:"' >> $DIR/fepini 
+echo '	echo ""' >> $DIR/fepini 
+echo '	echo "Este proceso de instalacion solo puede ser"' >> $DIR/fepini 
+echo '	echo "ejecutado si Perl 5 o superior esta instalado."' >> $DIR/fepini 
+echo '	echo ""' >> $DIR/fepini 
+echo '	echo "Efectue la instalacion de Perl"' >> $DIR/fepini 
+echo '	echo "e inicie nuevamente el procedimiento de instalacion."' >> $DIR/fepini 
+echo '	echo ""' >> $DIR/fepini 
+echo '	returncode=$PERL_NO_INSTALADO' >> $DIR/fepini 
+echo 'else' >> $DIR/fepini 
+echo '	echo "FEPINI - Perl esta instalado correctamente"' >> $DIR/fepini 
+echo 'fi' >> $DIR/fepini 
+echo 'if [ $returncode -eq $OK ]; then' >> $DIR/fepini 
+echo '   if [ $GRUPO ]; then' >> $DIR/fepini 
+echo '      echo ""' >> $DIR/fepini 
+echo '      echo "FEPINI - La variable grupo ya está inicializada con el valor:  $GRUPO"' >> $DIR/fepini 
+echo '      returncode=$AMBIENTE_YA_INICILIZADO' >> $DIR/fepini 
+echo '   else' >> $DIR/fepini 
+echo '      #seteo el directorio del tp' >> $DIR/fepini 
+echo '      GRUPO="/home/$USER/GRUPO07"' >> $DIR/fepini 
+echo '   fi' >> $DIR/fepini 
+echo 'fi' >> $DIR/fepini 
+echo '# Seteo la variables para ser utilizadas por los comandos' >> $DIR/fepini 
+echo 'PATH_ARCH_MAEPRO="$GRUPO/pp/maepro.txt"' >> $DIR/fepini 
+echo 'PATH_ARCH_PRESU="$GRUPO/pp/presu.txt"' >> $DIR/fepini 
+echo 'PATH_PRESU_OLD="$GRUPO/pp/old"' >> $DIR/fepini 
+echo 'PATH_ARRIBOS="$GRUPO/arribos"' >> $DIR/fepini 
+echo 'PATH_FACT_RECIBIDAS="$GRUPO/recibidos"' >> $DIR/fepini 
+echo 'PATH_FACT_RECHAZADAS="$GRUPO/rechazados"' >> $DIR/fepini 
+echo 'PATH_FACT_ACEPTADAS="$GRUPO/aceptados"' >> $DIR/fepini 
+echo 'PATH_ARCH_FACT_PAGAR="$GRUPO/facturas/apagar.txt"' >> $DIR/fepini 
+echo 'PATH_ARCH_FACT_PAGAR_OLD="$GRUPO/facturas/old"' >> $DIR/fepini 
+echo 'PATH_LISTADOS="$GRUPO/facturas/listados"' >> $DIR/fepini 
+echo 'PATH_LOG="$GRUPO/comandos/log"' >> $DIR/fepini 
+echo 'PATH_COMANDOS="$GRUPO/comandos"' >> $DIR/fepini 
+echo 'cant=`expr $(ls $PATH_ARCH_MAEPRO | wc -w)`' >> $DIR/fepini 
+echo 'if [ $returncode -eq $OK ]; then' >> $DIR/fepini 
+echo '   if [ $cant -eq 0 ]; then' >> $DIR/fepini 
+echo '      echo ""' >> $DIR/fepini 
+echo '      echo "FEPINI - Inicializacion de ambiente no fue exitosa. El archivo maestro de proveedores no existe"' >> $DIR/fepini 
+echo '      GRUPO=""' >> $DIR/fepini 
+echo '      returncode=$ARCHIVO_PROV_NO_EXISTE' >> $DIR/fepini 
+echo '   fi' >> $DIR/fepini 
+echo 'fi' >> $DIR/fepini 
+echo 'cant=`expr $(ls $PATH_ARCH_PRESU | wc -w)`' >> $DIR/fepini 
+echo 'if [ $returncode -eq $OK ]; then' >> $DIR/fepini 
+echo '   if [ $cant -eq 0 ]; then' >> $DIR/fepini 
+echo '      echo ""' >> $DIR/fepini 
+echo '      echo "FEPINI - Inicializacion de ambiente no fie exitosa. El archivo de presupuesto no existe"' >> $DIR/fepini 
+echo '      GRUPO=""' >> $DIR/fepini 
+echo '      returncode=$ARCHIVO_PRESUP_NO_EXISTE' >> $DIR/fepini 
+echo '   fi' >> $DIR/fepini 
+echo 'fi' >> $DIR/fepini 
+echo 'if [ $returncode -eq $OK ]; then' >> $DIR/fepini 
+echo '   echo ""' >> $DIR/fepini 
+echo '   echo "**********************************************************"' >> $DIR/fepini 
+echo '   echo "*           Inicialización de Ambiente Concluída         *"' >> $DIR/fepini 
+echo '   echo "*                        Ambiente                        *"' >> $DIR/fepini 
+echo '   echo "**********************************************************"' >> $DIR/fepini 
+echo '   echo " GRUPO:                       $GRUPO"' >> $DIR/fepini 
+echo '   echo " PATH_ARCH_MAEPRO:            $PATH_ARCH_MAEPRO"' >> $DIR/fepini 
+echo '   echo " PATH_ARCH_PRESU:             $PATH_ARCH_PRESU"' >> $DIR/fepini 
+echo '   echo " PATH_PRESU_OLD:              $PATH_PRESU_OLD"' >> $DIR/fepini 
+echo '   echo " PATH_ARRIBOS:                $PATH_ARRIBOS"' >> $DIR/fepini 
+echo '   echo " PATH_FACT_RECIBIDAS:         $PATH_FACT_RECIBIDAS"' >> $DIR/fepini 
+echo '   echo " PATH_FACT_RECHAZADAS:        $PATH_FACT_RECHAZADAS"' >> $DIR/fepini 
+echo '   echo " PATH_FACT_ACEPTADAS:         $PATH_FACT_ACEPTADAS"' >> $DIR/fepini 
+echo '   echo " PATH_ARCH_FACT_PAGAR:        $PATH_ARCH_FACT_PAGAR"' >> $DIR/fepini 
+echo '   echo " PATH_ARCH_FACT_PAGAR_OLD:    $PATH_ARCH_FACT_PAGAR_OLD"' >> $DIR/fepini 
+echo '   echo " PATH_LISTADOS:               $PATH_LISTADOS"' >> $DIR/fepini 
+echo '   echo " PATH_LOG:                    $PATH_LOG"' >> $DIR/fepini 
+echo '   echo " PATH_COMANDOS:               $PATH_COMANDOS"' >> $DIR/fepini 
+echo '   echo "**********************************************************"' >> $DIR/fepini 
+echo '   # seteamos el PATH' >> $DIR/fepini 
+echo '   export PATH=$PATH:$comandos' >> $DIR/fepini 
+echo '   #exportamos las variables de entorno' >> $DIR/fepini 
+echo '   export GRUPO' >> $DIR/fepini 
+echo '   export PATH_ARCH_MAEPRO' >> $DIR/fepini 
+echo '   export PATH_ARCH_PRESU' >> $DIR/fepini 
+echo '   export PATH_PRESU_OLD' >> $DIR/fepini 
+echo '   export PATH_ARRIBOS' >> $DIR/fepini 
+echo '   export PATH_FACT_RECIBIDAS' >> $DIR/fepini 
+echo '   export PATH_FACT_RECHAZADAS' >> $DIR/fepini 
+echo '   export PATH_FACT_ACEPTADAS' >> $DIR/fepini 
+echo '   export PATH_ARCH_FACT_PAGAR' >> $DIR/fepini 
+echo '   export PATH_ARCH_FACT_PAGAR_OLD' >> $DIR/fepini 
+echo '   export PATH_LISTADOS' >> $DIR/fepini 
+echo '   export PATH_LOG' >> $DIR/fepini 
+echo '   export PATH_COMANDOS' >> $DIR/fepini 
+echo 'fi' >> $DIR/fepini 
+echo 'if [ $returncode -eq $OK ]; then' >> $DIR/fepini 
+echo '    cant=`expr $(ps -eo args | grep "feponio" | grep -v "startfe" | grep -v "stopfe" | grep -v grep | wc -l)`' >> $DIR/fepini 
+echo '    if [ $cant -eq 0 ]; then' >> $DIR/fepini 
+echo '#      echo "No se encuentra feponio corriendo."' >> $DIR/fepini 
+echo '      #Iniciamos el demonio' >> $DIR/fepini 
+echo '      startfe' >> $DIR/fepini 
+echo '		pid="$(ps -eo pid,args | grep "feponio" | grep -v "startfe" | grep -v "stopfe" | grep -v grep | cut -c1-6)"' >> $DIR/fepini 
+echo '		echo "----------------------------------------------------------"' >> $DIR/fepini 
+echo '		echo " FEPINI - Demonio corriendo bajo el no: $pid"' >> $DIR/fepini 
+echo '		echo "----------------------------------------------------------"' >> $DIR/fepini 
+echo '   else ' >> $DIR/fepini 
+echo '      echo ""' >> $DIR/fepini 
+echo '      echo "FEPINI - Inicializacion de ambiente no fue exitosa. El demonio feponio se encuentra corriendo."' >> $DIR/fepini 
+echo '      returncode=$DEMONIO_YA_ESTA_CORRIENDO' >> $DIR/fepini 
+echo '   fi' >> $DIR/fepini 
+echo 'fi' >> $DIR/fepini 
+echo ' # exit $returncode' >> $DIR/fepini 

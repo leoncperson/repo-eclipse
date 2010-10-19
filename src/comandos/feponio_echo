@@ -1,0 +1,100 @@
+echo '#!/bin/bash' >> $DIR/feponio 
+echo '#Codigos de Retorno' >> $DIR/feponio 
+echo 'OK=0' >> $DIR/feponio 
+echo 'DEMONIO_YA_ESTA_CORRIENDO=1' >> $DIR/feponio 
+echo 'AMBIENTE_NO_INCIALIZADO=2' >> $DIR/feponio 
+echo '# Variable utilizada como código de retorno' >> $DIR/feponio 
+echo 'returncode=$OK' >> $DIR/feponio 
+echo '#Tiempo de espera del thread del demonio. En milisegundos' >> $DIR/feponio 
+echo 'TMRESPERA=3' >> $DIR/feponio 
+echo '#----------------------------------------------------------------------------------------' >> $DIR/feponio 
+echo '#Funcion que verfica si feprima se esta ejecutando, de no ser asi, lo ejecuta.' >> $DIR/feponio 
+echo '#----------------------------------------------------------------------------------------' >> $DIR/feponio 
+echo 'function invocarFeprima {' >> $DIR/feponio 
+echo '  #ya tuve que haber verificado que habia archivos' >> $DIR/feponio 
+echo '  # Verifico que se este ejecutando.' >> $DIR/feponio 
+echo '  cant=`expr $(ps -eo args | grep "feprima" | grep -v grep | wc -l)`' >> $DIR/feponio 
+echo '  # Si no se esta ejecutando feprima, lo invoco.' >> $DIR/feponio 
+echo '  if [ $cant -eq 0 ]; then' >> $DIR/feponio 
+echo '    feprima &' >> $DIR/feponio 
+echo '	pid="$(ps -eo pid,args | grep "feprima" | grep -v grep | cut -c1-6)"' >> $DIR/feponio 
+echo '	echo ""' >> $DIR/feponio 
+echo '	echo "FEPONIO - Se inicio feprima con proceso ID: $pid"	' >> $DIR/feponio 
+echo '  else' >> $DIR/feponio 
+echo '    # Ya se estaba ejecutando' >> $DIR/feponio 
+echo '    echo ""' >> $DIR/feponio 
+echo '    echo "FEPONIO - No se puede iniciar feprima pues ya está el proceso corriendo"		' >> $DIR/feponio 
+echo '  fi' >> $DIR/feponio 
+echo '}' >> $DIR/feponio 
+echo '#----------------------------------------------------------------------------------------' >> $DIR/feponio 
+echo '# Funcion que verifica si hay archivos en la carpeta "arribos" que se deben validar.' >> $DIR/feponio 
+echo '# Coprueba que sea valido el formato del nombre del archivo: <CAE>' >> $DIR/feponio 
+echo '#----------------------------------------------------------------------------------------' >> $DIR/feponio 
+echo 'function validarArchivos {' >> $DIR/feponio 
+echo '  local nombreArchivo' >> $DIR/feponio 
+echo '  local cant_validos=0' >> $DIR/feponio 
+echo '  ' >> $DIR/feponio 
+echo '  # Recorro directorio arribos... ' >> $DIR/feponio 
+echo '  for nombreArchivo in ` ls "$PATH_ARRIBOS" `' >> $DIR/feponio 
+echo '  do' >> $DIR/feponio 
+echo '    # Por default el archivo es invalido' >> $DIR/feponio 
+echo '    archivoValido=0' >> $DIR/feponio 
+echo '    # Para cada nombre de archivo, verifico su formato (14 digitos).' >> $DIR/feponio 
+echo '    formatoValido=`echo $nombreArchivo | grep "^[0-9]\{14\}$"`    ' >> $DIR/feponio 
+echo '    if [ "$formatoValido" = "$nombreArchivo" ]; then' >> $DIR/feponio 
+echo '      archivoValido=1' >> $DIR/feponio 
+echo '    fi' >> $DIR/feponio 
+echo '    if [ $archivoValido -eq 0 ]; then' >> $DIR/feponio 
+echo '      #mover a rechazados' >> $DIR/feponio 
+echo '      mover $PATH_ARRIBOS/$nombreArchivo $PATH_FACT_RECHAZADAS/$nombreArchivo' >> $DIR/feponio 
+echo '    else' >> $DIR/feponio 
+echo '      #mover a aceptados e incrementar cantidad de validos' >> $DIR/feponio 
+echo '      cant_validos=`expr $cant_validos + 1`' >> $DIR/feponio 
+echo '      mover $PATH_ARRIBOS/$nombreArchivo $PATH_FACT_RECIBIDAS/$nombreArchivo' >> $DIR/feponio 
+echo '    fi' >> $DIR/feponio 
+echo '  done' >> $DIR/feponio 
+echo '  # Si hay archivos Recibidos a procesar, invoco a feprima' >> $DIR/feponio 
+echo '  cantRecibidos=`expr $(ls $PATH_FACT_RECIBIDAS | wc -w)`' >> $DIR/feponio 
+echo '  if [ $cantRecibidos -gt 0 ]; then' >> $DIR/feponio 
+echo '#    echo ""' >> $DIR/feponio 
+echo '#    echo "FEPONIO - Se econtraron archivos recibidos en $PATH_FACT_RECIBIDAS"' >> $DIR/feponio 
+echo '    invocarFeprima' >> $DIR/feponio 
+echo '#    feprima' >> $DIR/feponio 
+echo '  else' >> $DIR/feponio 
+echo '    echo ""' >> $DIR/feponio 
+echo '    echo "FEPONIO - No se econtraron archivos recibidos en $PATH_FACT_RECIBIDAS"' >> $DIR/feponio 
+echo '  fi' >> $DIR/feponio 
+echo '}' >> $DIR/feponio 
+echo '#----------------------------------------------------------------------------------------------' >> $DIR/feponio 
+echo '# demonio' >> $DIR/feponio 
+echo '#----------------------------------------------------------------------------------------------' >> $DIR/feponio 
+echo 'sleep 1' >> $DIR/feponio 
+echo '# Lo verifico si el ambiente esta incializado' >> $DIR/feponio 
+echo 'if [ $GRUPO ]; then' >> $DIR/feponio 
+echo '  #se inicializo el ambiente.' >> $DIR/feponio 
+echo '  #verifico que no haya otro demonio corriendo' >> $DIR/feponio 
+echo '  cant=`expr $(ps -eo args | grep "feponio" | grep -v "startfe" | grep -v "stopfe" | grep -v grep | wc -l)`' >> $DIR/feponio 
+echo '  if [ $cant -eq 3 ]; then' >> $DIR/feponio 
+echo '    #no se esta ejecutando' >> $DIR/feponio 
+echo '    returncode=$OK' >> $DIR/feponio 
+echo '  else' >> $DIR/feponio 
+echo '    #ya se esta ejecutando' >> $DIR/feponio 
+echo '    returncode=$DEMONIO_YA_ESTA_CORRIENDO' >> $DIR/feponio 
+echo '    echo ""' >> $DIR/feponio 
+echo '    echo "FEPONIO - Ya se está ejecutando el demonio."' >> $DIR/feponio 
+echo '  fi' >> $DIR/feponio 
+echo 'else' >> $DIR/feponio 
+echo '  #no se inicializo el ambiente' >> $DIR/feponio 
+echo '  returncode=$AMBIENTE_NO_INCIALIZADO' >> $DIR/feponio 
+echo '  echo ""' >> $DIR/feponio 
+echo '  echo "FEPONIO - Debe inicializar el ambiente primero."' >> $DIR/feponio 
+echo 'fi' >> $DIR/feponio 
+echo '#si el ambiente esta inicializado => ejecuto el demonio' >> $DIR/feponio 
+echo 'if [ $returncode -eq $OK ]; then' >> $DIR/feponio 
+echo '  while [ true ] ' >> $DIR/feponio 
+echo '  do' >> $DIR/feponio 
+echo '    validarArchivos' >> $DIR/feponio 
+echo '    sleep $TMRESPERA' >> $DIR/feponio 
+echo '  done' >> $DIR/feponio 
+echo 'fi' >> $DIR/feponio 
+echo 'exit $returncode' >> $DIR/feponio 

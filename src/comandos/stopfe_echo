@@ -1,0 +1,11 @@
+echo '#!/bin/bash' >> $DIR/stopfe 
+echo 'returncode=0' >> $DIR/stopfe 
+echo 'cant=`expr $(ps -eo args | grep "feponio" | grep -v "startfe" | grep -v "stopfe" | grep -v grep | wc -l)`' >> $DIR/stopfe 
+echo 'if [ $cant -eq 0 ]; then' >> $DIR/stopfe 
+echo '   echo "STOPFEPONIO - No se encuentra demonio corriendo."' >> $DIR/stopfe 
+echo '   returncode=1' >> $DIR/stopfe 
+echo 'else' >> $DIR/stopfe 
+echo '   pid="$(ps -eo pid,args | grep "feponio" | grep -v "startfe" | grep -v "stopfe" | grep -v grep | cut -c1-6)"' >> $DIR/stopfe 
+echo '      echo "STOPFEPONIO - Matando el proceso demonio con PID $pid"' >> $DIR/stopfe 
+echo '      kill $pid' >> $DIR/stopfe 
+echo 'fi' >> $DIR/stopfe 

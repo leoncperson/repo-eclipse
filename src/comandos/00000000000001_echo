@@ -1,0 +1,4 @@
+echo '11111111111;A;0001;00000001;2010-03-05;2011-05-01;300.00;250.00;42.00;592.00' >> $grupo_inst/arribos/00000000000001 
+echo 'PRODUCTO 1;100.00;21.00;21.00' >> $grupo_inst/arribos/00000000000001 
+echo 'PRODUCTO 2;200.00;10.50;21.00' >> $grupo_inst/arribos/00000000000001 
+echo 'PRODUCTO 3;250.00;00.00;00.00' >> $grupo_inst/arribos/00000000000001 

@@ -1,0 +1,4 @@
+echo 'PROVEEDOR 1;DOMICILIO 1;22222222222;IVA EXENTO;2010-01-01;5' >> $grupo_inst/pp/maepro.txt 
+echo 'PROVEEDOR 2;DOMICILIO 2;11111111111;IVA EXENTO;2010-01-01;' >> $grupo_inst/pp/maepro.txt 
+echo 'PROVEEDOR 3;DOMICILIO 3;33333333333;IVA EXENTO;2010-01-01;20' >> $grupo_inst/pp/maepro.txt 
+echo 'PROVEEDOR 4;DOMICILIO 4;00000000001;IVA EXENTO;2010-01-01;90' >> $grupo_inst/pp/maepro.txt 

@@ -1,0 +1,5 @@
+echo '11;18074.39;2010-11-11;uno ' >> $grupo_inst/pp/presu.txt 
+echo '12;160000.91;2010-11-11;uno' >> $grupo_inst/pp/presu.txt 
+echo '13;2000000.99;2010-11-11;uno  ' >> $grupo_inst/pp/presu.txt 
+echo '14;19600000.93;2010-11-11;uno ' >> $grupo_inst/pp/presu.txt 
+echo '15;198000000.95;2010-11-11;uno ' >> $grupo_inst/pp/presu.txt 
