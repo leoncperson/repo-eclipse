@@ -1,17 +1,17 @@
 #!/bin/bash
 MSG="./glog"                 #Nombre del script que imprime mensajes en archivo de log
 #constantes
-FEPAGO_PATH_LOG=$(echo $MSG $PWD"/log/fepago")
+FEPAGO_PATH_LOG="glog fepago"
 A_PAGAR="A PAGAR"
-FILE_APAGAR=$PWD"/../facturas/apagar.txt"
-FILE_PRESU=$PWD"/../pp/presu.txt"
-PREFIX_APAGAR_VERSION=$PWD"/../facturas/old/apagar."
-VERSION_APAGAR=$PWD"/../facturas/old/version_apagar.dat"
-FILE_APAGAR_TEMP=$PWD"/../facturas/old/apagar.tmp"
-FILE_APAGAR_COMPROMET=$PWD"/../facturas/old/apagar.txt.tmp"
-PREFIX_PRESU_VERSION=$PWD"/../pp/old/presu."
-VERSION_PRESU=$PWD"/../facturas/old/version_presu.dat"
-FILE_PRESU_TEMP=$PWD"/../pp/old/presu.tmp"
+FILE_APAGAR="$GRUPO/facturas/apagar.txt"
+FILE_PRESU="$GRUPO/pp/presu.txt"
+PREFIX_APAGAR_VERSION="$GRUPO/facturas/old/apagar."
+VERSION_APAGAR="$GRUPO/facturas/old/version_apagar.dat"
+FILE_APAGAR_TEMP="$GRUPO/facturas/old/apagar.tmp"
+FILE_APAGAR_COMPROMET="$GRUPO/facturas/old/apagar.txt.tmp"
+PREFIX_PRESU_VERSION="$GRUPO/pp/old/presu."
+VERSION_PRESU="$GRUPO/facturas/old/version_presu.dat"
+FILE_PRESU_TEMP="$GRUPO/pp/old/presu.tmp"
 #varibles globales
 gLineaFactura=""
 gCodigoCAE=
@@ -32,15 +32,12 @@ gOptBarrido=
 #nro de version
 gNroVersionPresu=0
 gNroVersionAPagar=0
-
 LIST_FUENTES=(11 0.0 0.0 #fuente 11
 12 0.0 0.0 #fuente 12
 13 0.0 0.0 #fuente 13
 14 0.0 0.0 #fuente 14
 15 0.0 0.0 ) #fuente 15
-
 export GRUPO=$PWD
-
 function existeFepago
 {
 	#ver si existe otro fepago corriendo
@@ -58,7 +55,6 @@ function existeFepago
 		exit 1
 	fi
 }
-
 function existeFeprima
 {
 	#ver si existe otro fepago corriendo
@@ -76,7 +72,6 @@ function existeFeprima
 		exit 1
 	fi
 }
-
 function obtenerPID
 {
 	ps x > auxiliar.txt
@@ -87,14 +82,11 @@ function obtenerPID
 	PID=`grep "bash $1" auxiliar.txt|cut -f2 -d" "`
 	#echo $1
 	rm auxiliar.txt
-
 	if [ -n $PID ] ; then
 		CURRENTPID=$PID
 		#echo $PID # Muestra el PID por stdout
 	fi
 }
-
-
 function checkVariablesAmbiente(){
    #export GRUPO
    #export PATH_ARCH_MAEPRO
@@ -109,19 +101,16 @@ function checkVariablesAmbiente(){
    #export PATH_LISTADOS
    #export PATH_LOG
    #export PATH_COMANDOS
-
 	#Se ha seteado la var GRUPO?
 	if test -z $GRUPO
 	then
 		return 1
 	fi
-
 	#Se ha seteado la var PATH_ARCH_MAEPRO?
 	if test -z $PATH_ARCH_MAEPRO
 	then
 		return 1
 	fi
-
 	#Se ha seteado la var PATH_ARCH_PRESU?
 	if test -z $PATH_ARCH_PRESU
 	then
@@ -133,13 +122,11 @@ function checkVariablesAmbiente(){
 	then
 		return 1
 	fi
-
 	#Se ha seteado la var PATH_ARRIBOS?
 	if test -z $PATH_ARRIBOS
 	then
 		return 1
 	fi
-
 	#Se ha seteado la var PATH_FACT_RECIBIDAS?
 	if test -z $PATH_FACT_RECIBIDAS
 	then
@@ -151,37 +138,31 @@ function checkVariablesAmbiente(){
 	then
 		return 1
 	fi	
-
 	#Se ha seteado la var PATH_FACT_ACEPTADAS?
 	if test -z $PATH_FACT_ACEPTADAS
 	then
 		return 1
 	fi	
-
 	#Se ha seteado la var PATH_ARCH_FACT_PAGAR?
 	if test -z $PATH_ARCH_FACT_PAGAR
 	then
 		return 1
 	fi	
-
 	#Se ha seteado la var PATH_ARCH_FACT_PAGAR_OLD?
 	if test -z $PATH_ARCH_FACT_PAGAR_OLD
 	then
 		return 1
 	fi	
-
 	#Se ha seteado la var PATH_LISTADOS?
 	if test -z $PATH_LISTADOS
 	then
 		return 1
 	fi	
-
 	#Se ha seteado la var PATH_LOG?
 	if test -z $PATH_LOG
 	then
 		return 1
 	fi	
-
 	#Se ha seteado la var PATH_COMANDOS?
 	if test -z $PATH_COMANDOS
 	then
@@ -189,9 +170,7 @@ function checkVariablesAmbiente(){
 	fi	
 	
 	return 0
-
 }
-
 function mostrarDisponibilidades
 {
 	CONTADOR=0
@@ -236,7 +215,6 @@ function loadFuenteInicial
 	valor=$2
 	LIST_FUENTES[$((CONTADOR+1))]=$valor
 }
-
 # $1 nro de fuente
 # $2 valor final a cargar
 function loadFuenteFinal
@@ -246,7 +224,6 @@ function loadFuenteFinal
 	valor=$2
 	LIST_FUENTES[$((CONTADOR+2))]=$valor
 }
-
 # $1 nombre del archivo
 # $2 nro de fuente a buscar
 #si la fuente no existe retorna 0
@@ -267,8 +244,6 @@ function getMontoxFuente
 	done < $1
 	return 0
 }
-
-
 #checkea la disponibilidad contra el archivo de
 #presupuesto
 # $1 monto de disponibilidad
@@ -302,7 +277,6 @@ function updateDispo
 		if [ `echo "$montoPag > $montoFte" | bc -l` = "1" ]; then
 			return 0
 		else
-			#sed -e 's/11;\([0-9]*.[0-9]\{2\}\)/11;33/g' test.txt 
 			diferMonto=`echo "$montoFte-$montoPag" | bc`
 			sed $FILE_PRESU -e "s/$nroFte;\([0-9]*.[0-9]\{2\}\);/$nroFte;$diferMonto;/g" > $FILE_PRESU_TEMP
 			cat $FILE_PRESU_TEMP > $FILE_PRESU
@@ -362,7 +336,6 @@ function recorrerFacturas
 	#se borra el temporal por si estaba
 	rm -f $FILE_APAGAR_TEMP
 	gNumLineFac=0
-
 	#-------------------copia facturas
 	nextNroVersion $VERSION_APAGAR
 	versionAPagar=$?
@@ -463,7 +436,6 @@ function getFuenteByRango
 	fi
 	return 0
 }
-
 #controla los parametros de entrada
 function mainCheck
 {
@@ -476,8 +448,6 @@ function mainCheck
 		#return $retcode 
 	fi 
 }
-
-
 #recibe un argumento $1 que contiene la fecha a validar
 #retorna 1 si es valida
 #retorna 0 si es invalida
@@ -496,7 +466,7 @@ function validFecha
 function validMonto
 {
 	line=$1
-	montoTemp=`echo "$line" | grep '^\([0-9]*\.[0-9][0-9]\)$'`
+	montoTemp=`echo "$line" | grep "^\([0-9]*\.[0-9][0-9]\)$"`
 	
 	if test -z $montoTemp
 	then
@@ -524,7 +494,6 @@ function nextNroVersion
 	echo $((nroVersion+1))>$archivo
 	return $nroVersion
 }
-
 #esta funcion lee 2 parametros y los valida
 #$2 fechaDesde
 #$3 fechaHasta
@@ -644,7 +613,6 @@ function checkCondicionFechas
 		return 0
 	fi
 }
-
 #esta funcion checkea que el valor este dentro del rango de montos
 # $1:montoDesde
 # $2:montoHasta
@@ -666,7 +634,6 @@ function checkCondicionMontos
 		fi
 	fi
 }
-
 	#muestra un menu de modos
 #retorna la opcion elegida
 function menuModos
@@ -688,7 +655,6 @@ function menuModos
 		fi
 	done
 }
-
 function menuBarrido
 {
 	#se presenta el menu
@@ -757,29 +723,29 @@ function menuBarrido
 	done
 	return 0
 }
-
 function mainPrincipal
 {
 	existeFepago
 	existeFeprima
-	while [ 1 ]; do
-		menuModos
-		if [ $? -eq 100 ]; then 
-			echo "FIN DE EJECUCION"
-			return
-		fi
-		menuBarrido
-		if [ $? -eq 100 ]; then 
-			echo "FIN DE EJECUCION"
-			return
-		fi
-		loadVectorFuentes
-		recorrerFacturas $FILE_APAGAR "A PAGAR" $gOptBarrido
-		mostrarComprometidos
-		mostrarDisponibilidades
-	done
+	if [ $GRUPO ]; then
+		while [ 1 ]; do
+			menuModos
+			if [ $? -eq 100 ]; then 
+				echo "FIN DE EJECUCION"
+				return
+			fi
+			menuBarrido
+			if [ $? -eq 100 ]; then 
+				echo "FIN DE EJECUCION"
+				return
+			fi
+			loadVectorFuentes
+			recorrerFacturas $FILE_APAGAR "A PAGAR" $gOptBarrido
+			mostrarComprometidos
+			mostrarDisponibilidades
+		done
+	else
+		exit 1
+	fi
 }
-#existeFepago
-#existeFeprima
-
 mainPrincipal
