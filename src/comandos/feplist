@@ -1,0 +1,515 @@
+#!/usr/bin/perl
+
+#*****************************************************************************************************************
+#* FLUJO PRINCIPAL             
+#*****************************************************************************************************************
+
+#CHECK 1: No debe estar corriendo NI fepago NI feprima.
+ 
+$ejec_feprima=`expr \$(ps -a | grep "feprima" | grep -v grep | wc -l)`;
+$ejec_fepago= `expr \$(ps -a | grep "fepago" | grep -v grep | wc -l)`;
+ 
+if (($ejec_fepago != 0 ) or ($ejec_feprima != 0)){
+print "ERROR. No se pueden realizar listados existen procesos modificando \n";
+print "       los archivos que contienen la informacion necesaria. \n";
+exit 1;
+}
+
+#CHEK 2: Si el ambiente no esta inicializado lo inicializo.
+if (!($ENV{"GRUPO"})){
+$curr=`pwd`;
+chomp($curr);
+$GRUPO="$curr/GRUPO07"; 
+$PATH_ARCH_MAEPRO="$GRUPO/pp/maepro.txt";
+$PATH_ARCH_PRESU="$GRUPO/pp/presu.txt";
+$PATH_ARCH_FACT_PAGAR="$GRUPO/facturas/apagar.txt";
+$PATH_LISTADOS="$GRUPO/facturas/listados";
+}else{
+$GRUPO=$ENV{"GRUPO"};
+$PATH_ARCH_MAEPRO=$ENV{"PATH_ARCH_MAEPRO"};
+$PATH_ARCH_PRESU=$ENV{"PATH_ARCH_PRESU"};
+$PATH_ARCH_FACT_PAGAR=$ENV{"PATH_ARCH_FACT_PAGAR"};
+$PATH_LISTADOS=$ENV{"PATH_LISTADOS "};
+};
+
+$cantidad_de_parametros=@ARGV;
+@ARGV= map {lc} @ARGV;
+
+&validar_parametros;
+
+SWITCH:{
+#Si la busqueda es por totales
+if ($ARGV[1]=~ /^t[al]$/) {
+&validar_param_totales($ARGV[2]);
+$estado = ($ARGV[1] eq "ta") ? "A PAGAR" : "LIBERADA";
+&buscar_totales;
+last SWITCH;
+};
+
+    #Si la busqueda es de facturas
+    if ($ARGV[1]=~ /^f[al][fm]$/){
+
+       #Chequeo cantidad de parametros correcta 
+       if ($cantidad_de_parametros < 4){
+print "\nERROR.Deben ingresarse 2 parametros para indicar el rango. \n\n";
+exit 1
+        };
+    
+        #Chequeo que el formato de los montos ingresados sea correcto.
+        if($ARGV[1]=~ /^f[al]m$/){
+&validar_rango_monto;
+&buscar_monto;
+        };
+    
+        #Chequeo que el formato de las fechas sea correcto
+        if($ARGV[1]=~ /^f[al]f$/){
+&validar_fecha($ARGV[2]);
+&validar_fecha($ARGV[3]);
+#Determino mayor y menor fecha
+$menor_fecha = &es_fecha_mayor($ARGV[2],$ARGV[3]) ? $ARGV[3]:$ARGV[2];
+$mayor_fecha = &es_fecha_mayor($ARGV[2],$ARGV[3]) ? $ARGV[2]:$ARGV[3];
+&buscar_fecha;
+        };
+        last SWITCH
+    };
+
+    #Si la busqueda es por proveedores
+    if ($ARGV[1]=~ /^pro$/){
+&validar_param_proveedor;
+&buscar_proveedor;
+last SWITCH
+    };
+
+    #Si la busqueda es por disponibilidad
+    if ($ARGV[1]=~ /^dis$/){
+&validar_param_disponibilidad;
+&buscar_disponibilidad;
+last SWITCH
+    };
+};
+
+#Impresion por pantalla , archivo o ambos.
+if ($ARGV[0] eq "p" or $ARGV[0] eq "pa") {
+open (LISTADO,">&STDOUT");
+&imprimir_listado;
+close(LISTADO);
+
+};
+
+if($ARGV[0] eq "pa" or $ARGV[0] eq "a"){
+if (@salida) {
+&buscar_ultima_version;
+$salida=$PATH_LISTADOS."/".$nombre;
+open (LISTADO,">>$salida");
+&imprimir_listado;
+close(LISTADO);
+print "\nARCHIVO $nombre GENERADO CON EXITO. \n\n";
+}else{
+print "NO SE HA GENERADO NINGUN ARCHIVO.\n\n";
+};
+};
+
+
+#******************************************************************************************************************
+#* VALIDACIONES 
+#******************************************************************************************************************
+
+#Chequea que los montos sean del tipo dddd.dd
+sub validar_rango_monto{
+    if($ARGV[2]=~ /^\d*(\.\d{2})?$/ and $ARGV[3]=~ /^\d*(\.\d{2})?$/ ){
+        $menor_monto = $ARGV[2] < $ARGV[3] ? $ARGV[2] : $ARGV[3];
+        $mayor_monto = $ARGV[2] > $ARGV[3] ? $ARGV[2] : $ARGV[3];
+    }else{
+        print "\nERROR.El formato del monto es incorrecto.\n";
+print "      Formato correcto: dddd.dd ej: 200.20 / 350 .\n\n";
+        exit 1;
+    };  
+};
+
+#Chequea que las fechas sean del tipo DDMMAAAA y que sea una fecha valida. HIPOTESIS AÑO DESDE 1900 hasta 2099.
+sub validar_fecha{   
+my @dias_mes=(0,31,28,31,30,31,30,31,31,30,31,31,31);   
+if ($_[0]=~/^(3[0-1]|[1-2][0-9]|0[1-9])-(1[0-2]|0[1-9])-(19[0-9]{2}|20[0-9]{2})$/){
+my @fecha= split("-",$_[0]);
+if($fecha[0]> $dias_mes[$fecha[1]]){
+print "\nERROR.Formato de fecha invalido.\n";
+print "      El mes $fecha[1] no tiene $fecha[0] dias.\n\n";
+exit 1;
+};
+}else{
+print "\nERROR. \"$_[0]\" formato de fecha invalido.\n\n";
+print "        Formato valido dd-mm-aaaa ej: 13-04-1985.\n";
+print "        Dia: 01-31 Mes: 01-12 Anio: 1900-2099.\n\n";
+exit 1;
+}
+};
+
+#Recibe dos fechas en formato dd-mm-aaaa y retorna 1 si la primera es mayor
+sub es_fecha_mayor{
+my @fecha_1=split("-",$_[0]); 
+my @fecha_2=split("-",$_[1]); 
+if($fecha_1[2] > $fecha_2[2]){return 1;};
+if ($fecha_1[1] > $fecha_2[1] and $fecha_1[2]==$fecha_2[2]) {return 1;};
+if ($fecha_1[0]> $fecha_2[0] and $fecha_1[1]==$fecha_2[1] and $fecha_1[2]==$fecha_2[2] ) {return 1;};
+return 0;
+};
+
+#Recibe dos fechas en formato dd-mm-aaaa y retorna 1 son iguales
+sub es_misma_fecha{
+my @fecha_1=split("-",$_[0]); 
+my @fecha_2=split("-",$_[1]); 
+return ($fecha_2[0]==$fecha_1[0] and $fecha_1[1]==$fecha_2[1] and $fecha_1[2]==$fecha_2[2]);
+};
+
+#Recibe 3 fechas la primera en formato aaaa-mm-dd. Verifica si  fecha2 <= fecha1 <=fecha3
+sub fecha_dentro_del_rango {
+#Modifico el formato de la primera fecha 
+my @fecha= reverse (split("-",$_[0])); 
+my $fecha= join("-",@fecha);
+#Chequeo si fecha2< fecha1 y fecha1<fecha3
+my $mayor_a_menor= es_fecha_mayor($fecha,$_[1]);
+my $menor_a_mayor= es_fecha_mayor($_[2],$fecha);
+#Verifico que sea igual a la mayor o a la menor
+my $igual_a_mayor= es_misma_fecha($fecha,$_[2]);
+my $igual_a_menor= es_misma_fecha($fecha,$_[1]);
+return (($mayor_a_menor or $igual_a_menor) and ($menor_a_mayor or $igual_a_mayor));
+};
+
+#Verifica que el parametro 3 sea correcto para la busqueda por proveedor
+sub validar_param_proveedor{
+if ($cantidad_de_parametros != 3) {
+print "\nERROR. Debe especificar un criterio para buscar por proveedor. \n\n";
+exit 1
+};
+if ($ARGV[2] =~ /^ex|ri|nr|mo$/){
+SWITCH:{
+if ($ARGV[2] eq "ex"){$IVA = "IVA EXENTO"; last SWITCH};
+if ($ARGV[2] eq "ri"){$IVA = "IVA RESPONSABLE INSCRIPTO";last SWITCH};
+if ($ARGV[2] eq "nr"){$IVA = "NO RESPONSABLE IVA";last SWITCH};
+if ($ARGV[2] eq "mo"){$IVA = "RESPONSABLE MONOTRIBUTO";last SWITCH};
+}
+}else{
+print "\nERROR.El parametro \"$ARGV[2]\" es incorrecto.\n\n";
+print "        El formato correcto es: \n";
+print "        ex: IVA EXENTO. \n";
+print "        ri: IVA RESPONSABLE INSCRIPTO. \n";
+print "        nr: NO RESPONSABLE IVA.\n";
+print "        mo: RESPONSABLE MONOTRIBUTO. \n\n";
+exit 1;
+}
+};
+
+#Verifica que no se ingresen mas de 3 parametros. El parametro ingresado debe ser un numero de dos digitos
+sub validar_param_disponibilidad{
+if ($cantidad_de_parametros > 3) {
+print "\nERROR.La cantidad de parametros es incorrecta.\n\n";
+exit 1;
+}elsif( ($cantidad_de_parametros==3) and (!($ARGV[2]=~/^\d{2}$/)) ){
+print "\nERROR.\"$ARGV[2]\" no es una fuente valida.\n";
+print "      El formato correcto es digito-digito ej: 10.\n\n";
+exit 1; 
+}
+};
+
+sub validar_param_totales{
+if($cantidad_de_parametros!=3){
+print "\nERROR. Debe indicarse una fecha para determinar los totales.\n\n";
+exit 1;
+};
+if (!($ARGV[2]=~/^((0[1-9]|1[0-2])-)?(19[0-9]{2}|20[0-9]{2})$/)){
+print "\nERROR.La fecha ingresada es invalida.\n\n";
+print  "       Totales diarios formato correcto: MM-AAAA. Ej: 02-2010.\n";
+print  "       Totales mensual formato correcto: AAAA. Ej: 2010.\n\n";
+exit 1;
+};
+@fecha_ingresada=split("-",$ARGV[2]);
+$cantidad=@fecha_ingresada;
+};
+
+
+#Verifica que los parametros y la cantidad  sea correcta (2<=parametros<=4).
+sub validar_parametros{
+if ($cantidad_de_parametros < 2 or $cantidad_de_parametros > 4) {
+print "\nERROR.Cantidad de parametros incorrecta. \n\n";
+exit 1
+};
+if (!($ARGV[0] =~/^p|pa|a$/)) {
+print "\nERROR.Primer parametro incorrecto.\n\n";
+print "        El formato correcto para indicar la salida es: \n";
+print "        a: salida por archivo. \n";
+print "        p: salida por pantalla. \n";
+print "        pa: salida por pantalla y archivo. \n\n";
+exit 1;
+};
+if (!(($ARGV[1] =~/^f[al][mf]$/) or ($ARGV[1]=~/^(pro|dis|t[al])$/))) {
+print "\nERROR.Segundo parametro incorrecto. \n\n";
+print "        El formato correcto para el criterio de busqueda es: \n";
+print "        faf / fam : facturas a pagar por rango de fechas o rango de montos. \n";
+print "        flf / flm : facturas liberadas por rango de fechas o rango de montos. \n";
+print "        dis: disponibilidad de presupuesto de las fuentes. \n";
+print "        pro: busqueda por proovedores. \n";
+print "        ta / tl: total facturas a pagar o facturas liberadas.\n\n";
+exit 1;
+};
+};
+
+#*****************************************************************************************************************
+#* BUSQUEDA EN ARCHIVOS
+#*****************************************************************************************************************
+
+#Determina cual debe ser el nombre del archivo de salida
+sub buscar_nombre{
+SWITCH:{
+if($ARGV[1]=~/^t[al]$/){
+if ($estado eq "A PAGAR"){$estado="APAGAR";};
+$nombre="total_".$ARGV[2]."_".$estado;
+last SWITCH;
+};
+if ($ARGV[1] eq "pro") {
+$nombre="proveedor_".$ARGV[2];
+last SWITCH;
+};
+if($ARGV[1] eq "dis"){
+if($cantidad_de_parametros==3){
+$nombre="disponibilidad_fuente".$ARGV[2];
+}else{
+$nombre="disponibilidad_total";
+};
+last SWITCH;
+}
+if ($ARGV[1] =~ /^f[al]f$/) {
+if ($estado eq "A PAGAR"){$estado="APAGAR";};
+$nombre="facturas_fechas_".$menor_fecha."_".$mayor_fecha."_".lc $estado;
+last SWITCH;
+};
+if ($ARGV[1] =~ /^f[al]m$/) {
+if ($estado eq "A PAGAR"){$estado="APAGAR";};
+$nombre="facturas_montos_".$menor_monto."_".$mayor_monto."_".lc $estado;
+last SWITCH;
+};
+}
+};
+
+#Determina cual debe ser la version del archivo de salida
+sub buscar_ultima_version{
+buscar_nombre;
+    my @archivos =<$PATH_LISTADOS/$nombre.[0-9]*>;
+    if (@archivos) {
+        @archivos = sort(@archivos);
+        my @ultima_version=split("/",$archivos[-1]);
+        my @numero_version=split(/\./,$ultima_version[-1]);#
+        $numero_version[-1]+=1;
+        if ($numero_version[-1]<10){
+            $numero_version[-1]="0".$numero_version[-1];
+        };
+        $nombre=$nombre.".".$numero_version[-1];
+    }else{
+        $nombre=$nombre.".01";
+    }
+};
+
+#Busca registros cuyos montos esten comprendidos en un determinado rango
+sub buscar_monto{
+#Abro el archivo donde voy a buscar las facturas
+my $entrada=$PATH_ARCH_FACT_PAGAR;
+open (ENT,"<$entrada")|| die "\nERROR. No se puede abrir el archivo $entrada.\n\n";
+#Determino estado de facturas a buscar
+$estado = $ARGV[1] eq "fam" ? "A PAGAR" : "LIBERADA";
+#Comienza lectura de archivo
+while (<ENT>){
+chomp ($_);
+my @campos = split(";",$_);
+if ($campos[2] >=$menor_monto & $campos[2]<= $mayor_monto & $campos[3] eq $estado ){
+push @salida,$_;
+};
+};
+close (ENT);
+};
+
+##Busca registros cuyos fecha de vencimiento este comprendida en un determinado rango
+sub buscar_fecha{
+#Abro el archivo donde voy a buscar las facturas
+my $entrada=$PATH_ARCH_FACT_PAGAR;
+open (ENT,"<$entrada")|| die "\nERROR. No se puede abrir el archivo $entrada.\n\n";
+#Determino estado de facturas a buscar
+$estado = $ARGV[1] eq "faf" ? "A PAGAR" : "LIBERADA";
+#Comienza lectura de archivo
+while (<ENT>){
+chomp ($_);
+my @campos = split(";",$_);
+if((fecha_dentro_del_rango($campos[1],$menor_fecha,$mayor_fecha)) and ($campos[3] eq $estado)){
+push @salida, $_;
+};
+};
+close (ENT);
+};
+
+#Busca en el archivo de proveedores aquellos registros que cumplan con el criterio de busqueda
+sub buscar_proveedor{
+#Abro el archivo donde voy a buscar los proveedores
+my $entrada=$PATH_ARCH_MAEPRO;
+open (ENT,"<$entrada")|| die "\nERROR.No se puede abrir el archivo $entrada.\n\n";
+#Comienza lectura de archivo
+while (<ENT>){
+chomp ($_);
+my @campos = split(";",$_);
+if($campos[3] eq $IVA){
+push @salida, $_;
+};
+};
+close (ENT);
+};
+
+#Busa la disponibilidad de todas las fuentes o de la fuente indicada.
+sub buscar_disponibilidad{
+#Abro el archivo donde voy a buscar los proveedores
+my $entrada=$PATH_ARCH_PRESU;
+open (ENT,"<$entrada")|| die "\nERROR.No se puede abrir el archivo $entrada.\n\n";
+if($cantidad_de_parametros==2){
+@salida=<ENT>;
+map (chomp(),@salida);
+}else{
+#Comienza lectura de archivo
+while (<ENT>){
+chomp ($_);
+my @campos = split(";",$_);
+if($campos[0] eq $ARGV[2]){push @salida, $_;};
+};
+};
+close (ENT);
+@salida=sort @salida;
+};
+
+sub buscar_totales{
+#Abro el archivo donde voy a buscar las facturas
+my $entrada=$PATH_ARCH_FACT_PAGAR;
+open (ENT,"<$entrada")|| die "\nERROR. No se puede abrir el archivo $entrada.\n\n";
+if($cantidad==2){
+while (<ENT>) {
+chomp($_);
+my @campos=split(";",$_);
+my @fecha_archivo=split("-",$campos[1]);
+if($fecha_ingresada[0]== $fecha_archivo[1] and $fecha_ingresada[1]==$fecha_archivo[0] and $campos[3] eq $estado){
+$total{$fecha_archivo[2]}+=$campos[2];
+$final+=$campos[2];
+}
+};
+}else{
+while (<ENT>) {
+chomp($_);
+my @campos=split(";",$_);
+my @fecha_archivo=split("-",$campos[1]);
+if($fecha_ingresada[0]==$fecha_archivo[0]and $campos[3] eq $estado){
+$total{$fecha_archivo[1]}+=$campos[2];
+$final+=$campos[2];
+}
+};
+};
+@salida= sort(keys(%total)); ##
+close(ENT);
+};
+
+#*****************************************************************************************************************
+#* IMPRESION DE LISTADOS
+#*****************************************************************************************************************
+
+#Imprime el encabezado para la busqueda de facturas en la salida
+sub encabezado_facturas{
+if ($ARGV[1]=~ /^f[al]f$/) {
+$condicion ="COMPRENDIDAS ENTRE LAS FECHAS: $menor_fecha y $mayor_fecha.\n";
+}else{
+$condicion= "COMPRENDIDAS ENTRE LOS MONTOS: $menor_monto y $mayor_monto.\n";
+}
+print LISTADO "* FACTURAS $estado \n* $condicion";
+print LISTADO "********************************************************************************\n";
+print LISTADO "--------------------------------------------------------------------------- \n";
+print LISTADO "        CAE         |   FECHA VENCIMIENTO  |     ESTADO     |    MONTO      \n";
+print LISTADO "--------------------------------------------------------------------------- \n";
+};
+
+#Imprime el encabezado para la busqueda por proveedor en la salida.
+sub encabezado_proveedor{
+print LISTADO "* PROVEEDORES $IVA.\n";
+print LISTADO "********************************************************************************\n";
+print LISTADO "--------------------------------------------------------------------------------\n";
+print LISTADO "      CUIT     |   COND.PAGO    |   PROVEEDOR      \n";
+print LISTADO "--------------------------------------------------------------------------------\n";
+};
+
+#Imprime el encabezado para la busqueda por disponibilidad de fuentes en la salida.
+sub encabezado_disponibilidad{
+if ($cantidad_de_parametros == 3) {
+$condicion=" LA FUENTE Nº $ARGV[2].\n";
+}else{
+$condicion="TODAS LAS FUENTES.\n";
+};
+print LISTADO "* DISPONIBILIDAD DE $condicion";
+print LISTADO "********************************************************************************\n";
+print LISTADO "--------------------------------------------------------------------------------\n";
+print LISTADO "  FUENTE |  ULT MODIFICACION |   MONTO DISPONIBLE   \n";
+print LISTADO "--------------------------------------------------------------------------------\n";
+};
+
+sub encabezado_totales{
+if ($cantidad ==2) {
+$condicion="DIARIO DEL MES $ARGV[2].\n";
+}else{
+$condicion="MENSUAL DEL ANIO $ARGV[2].\n";
+};
+print LISTADO "* TOTAL $condicion";
+print LISTADO "* FACTURAS  $estado\n";
+print LISTADO "********************************************************************************\n";
+print LISTADO "--------------------------------------------------------------------------------\n";
+print LISTADO "       FECHA  ------------  MONTO        \n";
+print LISTADO "--------------------------------------------------------------------------------\n";
+};
+
+#Imprime el listado de registros que coinciden con el criterio de busqueda
+sub imprimir_listado{
+if (@salida) {
+my $fecha_hora=localtime;
+my $usuario=getpwuid($>);
+print LISTADO "********************************************************************************\n";
+print LISTADO "* $fecha_hora                                             LISTADO \n";
+SWITCH:{
+if ($ARGV[1] =~ /^f[al][mf]$/) { encabezado_facturas; last SWITCH};
+if ($ARGV[1] eq "pro") {encabezado_proveedor; last SWITCH};
+if ($ARGV[1] eq "dis") {encabezado_disponibilidad; last SWITCH};
+if ($ARGV[1]=~/^t[al]$/){encabezado_totales; last SWITCH;} #@salida= sort(keys(%total));
+};
+#if (@salida) {
+foreach $registro (@salida) {
+my @registro= split(";",$registro);
+SWITCH:{
+if($ARGV[1]=~/^t[al]$/){ 
+print LISTADO "     $registro-$ARGV[2]       |       $total{$registro}  \n";
+last SWITCH;
+};
+if ($ARGV[1] =~ /^f[al][mf]$/) {
+print LISTADO " $registro[0]      |     $registro[1]       |     $registro[3]    |   $registro[2]   \n"; 
+last SWITCH
+};
+if ($ARGV[1] eq "pro") {
+print LISTADO " $registro[2] |       $registro[5]       |   $registro[0]   \n";  
+last SWITCH
+};
+if ($ARGV[1] eq "dis") {
+print LISTADO "   $registro[0]    |    $registro[2]     |    $registro[1]    \n" ;
+last SWITCH
+};
+};
+};
+
+print LISTADO "--------------------------------------------------------------------------------\n";
+if($ARGV[1]=~/^t[al]$/){
+print LISTADO "  TOTAL FINAL $ARGV[2]         $final\n";
+print LISTADO "--------------------------------------------------------------------------------\n";
+};
+print LISTADO "\n********************************************************************************\n";
+print LISTADO "* Usuario:$usuario \n* FIN LISTADO\n";
+print LISTADO "********************************************************************************\n";
+}else{
+print LISTADO "\nNo se han encontrado registros que cumplan con los criterios de busqueda.\n\n";
+}
+};
+
