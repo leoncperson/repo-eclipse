@@ -1,22 +1,37 @@
 #!/bin/bash
-
+function truncar {
+	let cant=`expr $(cat $logPathFilename | wc -l)`
+	let dif=$cant-$TRUNC_SIZE
+	aux=$logPathFilename"_temp"	
+	let nroLinea=1
+	IFS="
+"
+	for linea in `cat $logPathFilename`
+	do
+		if [ $nroLinea -gt $dif ]; then
+			echo -e $linea >> $aux
+		fi
+		let nroLinea=$nroLinea+1
+	done
+	rm $logPathFilename
+	mv $aux $logPathFilename
+}
 # Sintaxis de ejecucion: Glog <nombreComando> <mensaje> [tipoMensaje]
 sintaxisEjecucion="Glog <nombreComando> <mensaje> [tipoMensaje]";
-
 # Nombre comando.
 modulo="Glog"
-
+#Tamaño maximo (en cantidad de lineas)
+MAX_SIZE=30
+#Cantidad de registros a de jar al truncar el archivo
+TRUNC_SIZE=10
 # Tipo de mensaje default.
 # I: Informativo
 # W: Warning
 # E: Error
 # S: Error Severo
-
 tipoMensaje="I";
-separador="\t";
-
+separador=" - ";
 fechaInstante=`date`;
-
 # Si la cantidad de argumentos no cumple con la minima necesaria...
 if [ "$#" -lt 2 ]; then
 	tipoMensaje="E";
@@ -25,7 +40,6 @@ if [ "$#" -lt 2 ]; then
 	mensaje="Sintaxis: glog <nombreComando> <mensaje> [tipoMensaje]."
 	echo -e "$fechaInstante$separador$tipoMensaje$separador$mensaje";
 fi
-
 # Si la cantidad de argumentos es dos, pues entonces se reciben argumentos <nombreComando> y <mensaje>;
 # se utiliza tipoMensaje por default I (Informativo)...
 if [ "$#" -eq 2 ]; then
@@ -34,16 +48,15 @@ if [ "$#" -eq 2 ]; then
 	mensajeLog="$fechaInstante$separador$tipoMensaje$separador$mensaje";
 	longitudMensaje=`echo $mensajeLog | wc -c`;	
 	logPathFilename=$PATH_LOG/$nombreComando;
-		
-	if [ $longitudMensaje -lt 132 ]; then 
-		echo -e $mensajeLog >> $logPathFilename;
-	else
-		tipoMensaje="E";
-		mensaje="Longitud de mensaje superior a 132 caracteres.";
-		echo -e "$fechaInstante$separador$tipoMensaje$separador$mensaje";
+	echo -e $mensajeLog >> $logPathFilename;
+	let cant=`expr $(cat $logPathFilename | wc -l)`
+	# Si la cantidad de lineas es mayo al tamaño maximo del archivo => lo trunca
+	if [ $cant -gt $MAX_SIZE ]; then
+		echo ""
+		echo "GLOG - log $1 excedido"
+		truncar
 	fi
 fi
-
 # Si la cantidad de argumentos es 3, pues entonces se reciben argumentos <nombreComando>, <mensaje> y <tipoMensaje>...
 if [ "$#" -eq 3 ]; then
 	nombreComando=$1;
@@ -53,19 +66,18 @@ if [ "$#" -eq 3 ]; then
 		tipoMensaje=$3;
 		mensajeLog="$fechaInstante$separador$tipoMensaje$separador$mensaje";
 		longitudMensaje=`echo $mensajeLog | wc -c`;
-		
-		if [ $longitudMensaje -lt 132 ]; then 
-			echo -e $mensajeLog >> $logPathFilename;
-		else	
-			tipoMensaje="E";
-			mensaje="Longitud de mensaje superior a 132 caracteres.";
-			echo -e "$fechaInstante$separador$tipoMensaje$separador$mensaje";
-		fi
+		echo -e $mensajeLog >> $logPathFilename;
 	else
 		mensaje="Sintaxis de ejecucion de comando incorrecta.";
 		echo -e "$fechaInstante$separador$tipoMensaje$separador$mensaje";
 		mensaje="Verificar argumento <tipoMensaje>.";
 		echo -e "$fechaInstante$separador$tipoMensaje$separador$mensaje";
 	fi
+	let cant=`expr $(cat $logPathFilename | wc -l)`
+	# Si la cantidad de lineas es mayo al tamaño maximo del archivo => lo trunca
+	if [ $cant -gt $MAX_SIZE ]; then
+		echo ""
+		echo "GLOG - log $1 excedido"
+		truncar
+	fi
 fi
-

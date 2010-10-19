@@ -1,9 +1,6 @@
 #!/bin/bash
-
 returncode=0
-
 cant=`expr $(ps -eo args | grep "feponio" | grep -v "startfe" | grep -v "stopfe" | grep -v grep | wc -l)`
-
 if [ $cant -eq 0 ]; then
    echo "STOPFEPONIO - No se encuentra demonio corriendo."
    returncode=1

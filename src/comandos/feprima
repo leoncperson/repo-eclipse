@@ -5,14 +5,11 @@ OK=0
 FEPRIMA_YA_INICIADO=1
 NO_HAY_ARCHIVOS=2
 AMBIENTE_NO_INICIALIZADO=3
-
 #Constantes de validacion
 VAL_OK="1"
 VAR_ERROR="0"
-
 # Inicializo el codigo de retorno
 returncode=$OK
-
 #verifico si feprima se esta ejecutando
  # ps -eo args | grep "feprima" | grep -v grep
  cant=`expr $(ps -eo args | grep "feprima" | grep -v grep | wc -l)` 
@@ -27,7 +24,6 @@ echo "|---------------------------------------------- "
 echo "|"
 if [ $cant -eq 3 ]; then
 	# Obtengo el process id para mostrarlo por pantalla
-
 	#Verifico que el ambiente se encuentre incializado
 	if [ $GRUPO ]; then
 		echo "|"
@@ -45,7 +41,6 @@ if [ $cant -eq 3 ]; then
 			echo "|"
 			echo "| FEPRIMA - INICIO DE FEPRIMA (cant. archivos: $cant) "
 			echo "|"
-
 			#Recorro todos los archivos del directorio de facturas recibidas
 			for archivo in `ls $PATH_FACT_RECIBIDAS 2>/dev/null`
 			do
@@ -63,13 +58,11 @@ if [ $cant -eq 3 ]; then
 					echo "| FEPRIMA - El archivo $archivo no esta duplicado "
 					echo "|"
 					let nroLinea=0
-
 					#Totales del encabezado
 					importeGravado=0.0
 					importeNoGravado=0.0
 					importeTributoIVA=0.0
 					importeTotal=0.0
-
 					#Totales a acumular por el detalle de la factura
 					sumaMontoItemGravados=0.0
 					sumaMontoItemNoGravados=0.0
@@ -79,7 +72,6 @@ if [ $cant -eq 3 ]; then
 					fechaEmision=""
 					#para guardar el CUIT del proveedor de la cabecera, para buscar en el archivo de proveedores
 					cuit=""
-
 					#defino el separador de linea
 					IFS="
 					"
@@ -112,13 +104,11 @@ if [ $cant -eq 3 ]; then
 								echo "| FEPRIMA - Cabecera a validar: $linea "
 								echo "|"
 								val=`echo "$linea" | sed "s/^[0-9]\{11\};[ABCE];[0-9]\{4\};[0-9]\{8\};\([0-9]\{4\}-[0-1][0-9]-[0-3][0-9];\)\{2\}\([0-9]*\.[0-9]\{2\};\)\{3\}[0-9]*\.[0-9]\{2\}$/1/"`
-
 								if [ "$val" = "$VAL_OK" ]; then
 									glog "feprima" "Archivo: $archivo cabecera válida " "I"
 									echo "|"
 									echo "| FEPRIMA - Formato cabecera valido "
 									echo "|"
-
 									#valido numeroPuntoVenta
 									nroPuntoVenta=`echo "$linea" | sed "s/^[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
 									valPuntoVenta=`expr $(echo "$nroPuntoVenta > 0 && $nroPuntoVenta < 9999" | bc)`
@@ -127,7 +117,6 @@ if [ $cant -eq 3 ]; then
 										echo "| FEPRIMA - nroPuntoVenta: "
 										echo "| $nroPuntoVenta "
 										echo "|"
-
 										#valido el nroComprobante
 										nroComprobante=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
 										valNroComprobante=`expr $(echo "$nroComprobante > 0 && $nroComprobante < 99999999" | bc)`
@@ -137,7 +126,6 @@ if [ $cant -eq 3 ]; then
 											echo "| $nroComprobante "
 											echo "|"
 											val=$VAL_OK
-
 											#Valido que el proveedor existe en el archivo de proveedores
 											#Obtengo el CUIT del proveedor
 											cuit=`echo "$linea" | sed "s/^\([0-9]\{11\}\);.*/\1/"`								
@@ -150,11 +138,9 @@ if [ $cant -eq 3 ]; then
 												echo "|"
 												echo "| FEPRIMA - Proveedor encontrado CUIT: $cuit "
 												echo "|"
-
 												#Valido que el CAE no este vencido
 												fechaVencCAE=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
 												fechaAux=`echo "$fechaVencCAE" | sed "s/^\([0-9]\{4\}\)-\([0-9]\{2\}\)-\([0-9]\{2\}\)/\1\2\3/"`    
-
 												#valido fecha de vencimiento CAE mayor o igual a fecha actual
 												fecActual=`date +%s`
 												fecAux2=`date -d$fechaAux +%s`
@@ -202,7 +188,6 @@ if [ $cant -eq 3 ]; then
 									echo "|"
 									val=$VAL_ERROR
 								fi
-
 								#verifico si todas las validaciones dieron ok
 								if [ "$val" = "$VAL_OK" ]; then
 									#Regsitro cabecera valido
@@ -220,7 +205,6 @@ if [ $cant -eq 3 ]; then
 									importeNoGravado=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
 									importeTributoIVA=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
 									importeTotal=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\)/\1/"`
-
 									#Obtengo fechaEmision para garbar en el apagar.txt
 									fechaEmision=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
 								else
@@ -246,22 +230,18 @@ if [ $cant -eq 3 ]; then
 								echo "| FEPRIMA - Detalle a validar: $linea |"
 								echo "|"
 								val=`echo "$linea" | sed "s/^[^;]*;[0-9]*\.[0-9]\{2\};[0-9]*\.[0-9]\{2\};[0-9]*\.[0-9]\{2\}$/1/"`
-
 								if [ "$val" = "$VAL_OK" ]; then
 									glog "feprima" "Archivo: $archivo detalle: $linea formato válido" "I"
 									echo "|"
 									echo "| FEPRIMA - Formato de registro correcto "
 									echo "|"
-
 									precio=`echo "$linea" | sed "s/^[^;]*;\([^;]*\);.*$/\1/"`
 									tasaIVA=`echo "$linea" | sed "s/^[^;]*;[^;]*;\([^;]*\);.*$/\1/"`
 									montoIVA=`echo "$linea" | sed "s/^[^;]*;[^;]*;[^;]*;\([^;]*\)$/\1/"`
-
 									#Valido que los montos sean > 0
 									valPrecio=`expr $(echo "$precio >= 0" | bc)`
 									valTasaIVA=`expr $(echo "$tasaIVA >= 0" | bc)`
 									valMontoIVA=`expr $(echo "$montoIVA >= 0" | bc)`
-
 									if [ $valPrecio -eq 1 -a $valTasaIVA -eq 1 -a $valMontoIVA -eq 1 ]; then
 										echo "|"
 										echo "| FEPRIMA - Los montos son validos "
@@ -269,7 +249,6 @@ if [ $cant -eq 3 ]; then
 										#Valido MontoIVAItem  = MontoItem * TasaIVAItem /100
 										val=$VAL_OK
 										montoIvaItemAux=`echo "$precio*$tasaIVA*0.01" | bc`
-
 										if [ `expr $(echo "$montoIvaItemAux == $montoIVA" | bc)` -eq 1 ]; then
 											echo "|"
 											echo "| FEPRIMA - MontoIVAItem: $montoIVA correcto "
@@ -306,7 +285,6 @@ if [ $cant -eq 3 ]; then
 									echo "|"
 									val=$VAL_ERROR
 								fi
-
 								#Verifico si todas las validaciones del detalle dieron ok
 								if [ "$val" = "$VAL_OK" ]; then
 									#Regsitro detalle valido
@@ -332,7 +310,6 @@ if [ $cant -eq 3 ]; then
 						echo "|"
 						val=$VAL_ERROR
 					fi
-
 					if [ "$val" = "$VAL_OK" ]; then
 						#------------------
 						#Valido los totales
@@ -421,7 +398,6 @@ if [ $cant -eq 3 ]; then
 					#--------------------------------------------
 					if [ "$val" = "$VAL_OK" ]; then
 						#paso todas las validaciones
-
 						#Busco la condicion de pago del proveedor
 						condPago=`grep "^[^;]*;[^;]*;$cuit;" $PATH_ARCH_MAEPRO | sed "s/^[^;]*;[^;]*;[^;]*;[^;]*;[^;]*;\([^;]*\)$/\1/"`
 						if [ $condPago ]; then
@@ -439,7 +415,6 @@ if [ $cant -eq 3 ]; then
 						echo "|"
 						echo "| FEPRIMA - Se grabo en el archivo $PATH_ARCH_FACT_PAGAR el registro: $linea_salida"
 						echo "|"
-
 						#muevo el archivo a aceptados
 						mover $PATH_FACT_RECIBIDAS/$archivo $PATH_FACT_ACEPTADAS/$archivo
 						#Grabo en log
@@ -487,7 +462,6 @@ else
 	echo "| FEPRIMA - No se puede iniciar feprima pues ya está el proceso corriendo"
 	echo "|"
 fi
-
 echo "|"
 echo " ----------------------------------------------------------------------------------------------------"
 echo ""

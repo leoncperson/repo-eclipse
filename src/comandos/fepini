@@ -1,5 +1,4 @@
 #!/bin/bash
-
 #Codigos de Retorno
 OK=0
 PERL_NO_INSTALADO=1
@@ -7,10 +6,8 @@ AMBIENTE_YA_INICILIZADO=2
 ARCHIVO_PROV_NO_EXISTE=3
 ARCHIVO_PRESUP_NO_EXISTE=4
 DEMONIO_YA_ESTA_CORRIENDO=5
-
 #inicializo el codigo de retorno
 returncode=$OK
-
 # ---------------------
 # -- Checkeo de grupo --
 # ---------------------
@@ -23,7 +20,6 @@ version=`echo ${vp2%%.*}`
 if [ -z $version ]; then
 	version=0
 fi
-
 if [ $version -lt 5 ]; then
 	clear
 	echo ""
@@ -39,8 +35,6 @@ if [ $version -lt 5 ]; then
 else
 	echo "FEPINI - Perl esta instalado correctamente"
 fi
-CURRDIR=$PWD
-
 if [ $returncode -eq $OK ]; then
    if [ $GRUPO ]; then
       echo ""
@@ -48,30 +42,23 @@ if [ $returncode -eq $OK ]; then
       returncode=$AMBIENTE_YA_INICILIZADO
    else
       #seteo el directorio del tp
-#      GRUPO="/home/nscuri/repo/src"
-	GRUPO="$CURRDIR/../"
+      GRUPO="/home/$USER/GRUPO07"
    fi
 fi
-
 # Seteo la variables para ser utilizadas por los comandos
 PATH_ARCH_MAEPRO="$GRUPO/pp/maepro.txt"
 PATH_ARCH_PRESU="$GRUPO/pp/presu.txt"
 PATH_PRESU_OLD="$GRUPO/pp/old"
-
 PATH_ARRIBOS="$GRUPO/arribos"
 PATH_FACT_RECIBIDAS="$GRUPO/recibidos"
 PATH_FACT_RECHAZADAS="$GRUPO/rechazados"
 PATH_FACT_ACEPTADAS="$GRUPO/aceptados"
-
 PATH_ARCH_FACT_PAGAR="$GRUPO/facturas/apagar.txt"
 PATH_ARCH_FACT_PAGAR_OLD="$GRUPO/facturas/old"
-
 PATH_LISTADOS="$GRUPO/facturas/listados"
 PATH_LOG="$GRUPO/comandos/log"
 PATH_COMANDOS="$GRUPO/comandos"
-
 cant=`expr $(ls $PATH_ARCH_MAEPRO | wc -w)`
-
 if [ $returncode -eq $OK ]; then
    if [ $cant -eq 0 ]; then
       echo ""
@@ -80,9 +67,7 @@ if [ $returncode -eq $OK ]; then
       returncode=$ARCHIVO_PROV_NO_EXISTE
    fi
 fi
-
 cant=`expr $(ls $PATH_ARCH_PRESU | wc -w)`
-
 if [ $returncode -eq $OK ]; then
    if [ $cant -eq 0 ]; then
       echo ""
@@ -91,7 +76,6 @@ if [ $returncode -eq $OK ]; then
       returncode=$ARCHIVO_PRESUP_NO_EXISTE
    fi
 fi
-
 if [ $returncode -eq $OK ]; then
    echo ""
    echo "**********************************************************"
@@ -112,10 +96,8 @@ if [ $returncode -eq $OK ]; then
    echo " PATH_LOG:                    $PATH_LOG"
    echo " PATH_COMANDOS:               $PATH_COMANDOS"
    echo "**********************************************************"
-
    # seteamos el PATH
    export PATH=$PATH:$comandos
-
    #exportamos las variables de entorno
    export GRUPO
    export PATH_ARCH_MAEPRO
@@ -131,14 +113,12 @@ if [ $returncode -eq $OK ]; then
    export PATH_LOG
    export PATH_COMANDOS
 fi
-
 if [ $returncode -eq $OK ]; then
     cant=`expr $(ps -eo args | grep "feponio" | grep -v "startfe" | grep -v "stopfe" | grep -v grep | wc -l)`
     if [ $cant -eq 0 ]; then
 #      echo "No se encuentra feponio corriendo."
       #Iniciamos el demonio
       startfe
-
 		pid="$(ps -eo pid,args | grep "feponio" | grep -v "startfe" | grep -v "stopfe" | grep -v grep | cut -c1-6)"
 		echo "----------------------------------------------------------"
 		echo " FEPINI - Demonio corriendo bajo el no: $pid"
@@ -149,5 +129,4 @@ if [ $returncode -eq $OK ]; then
       returncode=$DEMONIO_YA_ESTA_CORRIENDO
    fi
 fi
-
  # exit $returncode
