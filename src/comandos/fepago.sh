@@ -8,6 +8,7 @@ FILE_PRESU=$PWD"/../pp/presu.txt"
 PREFIX_APAGAR_VERSION=$PWD"/../facturas/old/apagar."
 VERSION_APAGAR=$PWD"/../facturas/old/version_apagar.dat"
 FILE_APAGAR_TEMP=$PWD"/../facturas/old/apagar.tmp"
+FILE_APAGAR_COMPROMET=$PWD"/../facturas/old/apagar.txt.tmp"
 PREFIX_PRESU_VERSION=$PWD"/../pp/old/presu."
 VERSION_PRESU=$PWD"/../facturas/old/version_presu.dat"
 FILE_PRESU_TEMP=$PWD"/../pp/old/presu.tmp"
@@ -29,8 +30,14 @@ gMontoFuente=
 gOptModo=
 gOptBarrido=
 #nro de version
-gNroVersionPresu=
-gNroVersionAPagar=
+gNroVersionPresu=0
+gNroVersionAPagar=0
+
+LIST_FUENTES=(11 0.0 0.0 #fuente 11
+12 0.0 0.0 #fuente 12
+13 0.0 0.0 #fuente 13
+14 0.0 0.0 #fuente 14
+15 0.0 0.0 ) #fuente 15
 
 export GRUPO=$PWD
 
@@ -184,6 +191,62 @@ function checkVariablesAmbiente(){
 	return 0
 
 }
+
+function mostrarDisponibilidades
+{
+	CONTADOR=0
+	while [ $CONTADOR -lt 15 ]; do
+		echo Fuente: ${LIST_FUENTES[$CONTADOR]} Disponibilidad Inicial: ${LIST_FUENTES[$((CONTADOR+1))]} Disponibilidad Final: ${LIST_FUENTES[$((CONTADOR+2))]}
+		let CONTADOR=CONTADOR+3
+	done
+	return 1
+}
+#muestra los comprometidos luego borra el temporal
+function mostrarComprometidos
+{
+	while read line
+	do
+		echo $line
+	done < $FILE_APAGAR_COMPROMET
+	#echo CAE: vencimiento: monto: estadoActualizado:
+	rm -f $FILE_APAGAR_COMPROMET
+}
+#carga el vecto global de fuentes
+function loadVectorFuentes
+{
+	CONTADOR=0
+	while [ $CONTADOR -lt 15 ]; do
+		nroFte=${LIST_FUENTES[$CONTADOR]}
+		getMontoxFuente $FILE_PRESU $nroFte
+		#valor inicial
+		LIST_FUENTES[$((CONTADOR+1))]=$gMontoFuente
+		#valor final por ahora
+		LIST_FUENTES[$((CONTADOR+2))]=$gMontoFuente
+		let CONTADOR=CONTADOR+3
+	done
+	return 1
+}
+	
+# $1 nro de fuente
+# $2 valor inicial a cargar
+function loadFuenteInicial
+{
+	CONTADOR=$1
+	CONTADOR=$((CONTADOR-11))
+	valor=$2
+	LIST_FUENTES[$((CONTADOR+1))]=$valor
+}
+
+# $1 nro de fuente
+# $2 valor final a cargar
+function loadFuenteFinal
+{
+	CONTADOR=$1
+	CONTADOR=$((CONTADOR-11))
+	valor=$2
+	LIST_FUENTES[$((CONTADOR+2))]=$valor
+}
+
 # $1 nombre del archivo
 # $2 nro de fuente a buscar
 #si la fuente no existe retorna 0
@@ -244,11 +307,50 @@ function updateDispo
 			sed $FILE_PRESU -e "s/$nroFte;\([0-9]*.[0-9]\{2\}\);/$nroFte;$diferMonto;/g" > $FILE_PRESU_TEMP
 			cat $FILE_PRESU_TEMP > $FILE_PRESU
 			rm -f $FILE_PRESU_TEMP
+			#se actualiza las disponibilidades finales
+			loadFuenteFinal $nroFte $diferMonto
 			return 1
 		fi	
 	else
 		#la fuente no existe
 		$FEPAGO_PATH_LOG "El numero de fuente no existe en el archivo presu.txt	" "E"
+	fi
+}
+# $1 indicador de modificacion de factura
+# $2 indica si la linea cumplio con la condicion
+function insertTempAPagar
+{
+	bChange=$2
+	if [ $bChange -eq 1 ] ; then
+		bUpdateFactura=$1
+		if [ $bUpdateFactura -eq 1 ] ; then
+			echo "$gCodigoCAE;$gFechaVenc;$gMontoPag;LIBERADA" >> $FILE_APAGAR_TEMP
+		else
+			echo "$gCodigoCAE;$gFechaVenc;$gMontoPag;A PAGAR" >> $FILE_APAGAR_TEMP
+		fi
+	else
+		echo "$gCodigoCAE;$gFechaVenc;$gMontoPag;$gEstadoFac" >> $FILE_APAGAR_TEMP
+	fi
+}
+#actualiza el archivo de facturas "apagar.txt"
+function updateAPagar
+{
+	#copia y borra el temporal
+	mv $FILE_APAGAR_TEMP $FILE_APAGAR
+}
+# $1 flag de modificacion de linea de factura
+# $2 flag de comprometido o NO
+#guarda solo las facturas comprometidas
+function insertComprometido
+{
+	bCompromet=$2
+	if [ $bCompromet -eq 1 ] ; then
+		bUpdateFactura=$1
+		if [ $bUpdateFactura -eq 1 ] ; then
+			echo "$gCodigoCAE;$gFechaVenc;$gMontoPag;LIBERADA" >> $FILE_APAGAR_COMPROMET
+		else
+			echo "$gCodigoCAE;$gFechaVenc;$gMontoPag;A PAGAR" >> $FILE_APAGAR_COMPROMET
+		fi
 	fi
 }
 # recorre el archivo de facturas
@@ -259,6 +361,7 @@ function recorrerFacturas
 {
 	#se borra el temporal por si estaba
 	rm -f $FILE_APAGAR_TEMP
+	gNumLineFac=0
 
 	#-------------------copia facturas
 	nextNroVersion $VERSION_APAGAR
@@ -277,25 +380,34 @@ function recorrerFacturas
 	opt=$3
 	while read line
 	do
+		bCompromet=0
+		bChange=0
+		bUpdateFactura=0
 		procFileFacturaAPagar $estado $numLine $line
 		# 1ero se filtra por estado "A PAGAR"	
 		if [ $? -eq 1 ]; then
 			checkCondicion $opt
 			# 2do se filtra por la condicion de barrido
 			if [ $? -eq 1 ]; then
+				bCompromet=1
 				if [ $gOptModo = "Actualizacion" ] ; then
 					# 3ero se filtra por la disponibilidad
 					checkDispo $gMontoPag
 					if [ $? -eq 1 ]; then
-						echo $line >> $FILE_APAGAR_TEMP
 						updateDispo $gMontoPag
+						bUpdateFactura=1
+						bChange=1
 					fi
 #				elif [ $gOptModo = "Simulacion" ] ; then
 #					echo ES Simulacion
 				fi
 			fi
 		fi
+		#se actualiza apagar.txt
+		insertComprometido $bUpdateFactura $bCompromet
+		insertTempAPagar $bUpdateFactura $bChange
 	done < $1
+	updateAPagar
 	return 1
 }
 #recorre el archivo de facturas y busca los registros
@@ -307,8 +419,8 @@ function procFileFacturaAPagar
 {	
 	estado=$1
 	numLine=$2
-	#line=$3
 	numLine=$((numLine+1))
+	#line=$3
 	codigoCAE=`echo "$line" | sed "s/^\([0-9]\{14\}\);.*/\1/"`	   
 	fechaVenc=`echo "$line" | sed "s/^\([0-9]\{14\}\);\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\);.*/\2/"`	   
 	montoPag=`echo "$line" | sed "s/^\([0-9]\{14\}\);\([0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}\);\([0-9]*\.[0-9]\{2\}\).*/\3/"`   
@@ -371,33 +483,10 @@ function mainCheck
 #retorna 0 si es invalida
 function validFecha
 {
-	line=$1
-	year=`echo $line | cut -d"-" -f1`
-	if test -z $year ; then
-		return 0
-	else
-		year=`echo "$year" | grep '19[0-9][0-9]\|20[0-3][0-7]\|2008\|2009'`
-		if test -z $year ; then
-			return 0
-		fi
-	fi
-	month=`echo $line | cut -d"-" -f2`
-	if test -z $month ; then
-		return 0
-	else
-		month=`echo "$month" | grep '1[0-2]\|0[1-9]'`
-		if test -z $month ; then
-			return 0
-		fi
-	fi
-	day=`echo $line | cut -d"-" -f3`
-	if test -z $day ; then
-		return 0
-	else
-		day=`echo "$day" | grep '[0-2][0-9]\|30\|31'`
-		if test -z $day ; then
-			return 0
-		fi		
+	fechaV=$1
+	fechaV=`echo "$fechaV" | grep "^\(19\|20\)[0-9][0-9]-\(0[1-9]\|1[012]\)-\(0[1-9]\|[12][0-9]\|3[01]\)$"`
+ 	if test -z $fechaV ; then
+ 		return 0
 	fi
 	return 1
 }
@@ -446,10 +535,8 @@ function validRangoFechas
 		validFecha $2
 		if [ $? -eq 1 ]; then
 			#ambas son validas
-			fechaDesde=$1
-			fechaHasta=$2		
-			fechaDesde=`date -d $fechaDesde +%Y%m%d`
-			fechaHasta=`date -d $fechaHasta +%Y%m%d`
+			fechaDesde=$(echo $1 | cut -d"-" -f1)$(echo $1 | cut -d"-" -f2)$(echo $1 | cut -d"-" -f3)
+			fechaHasta=$(echo $2 | cut -d"-" -f1)$(echo $2 | cut -d"-" -f2)$(echo $2 | cut -d"-" -f3)
 			#controlar rango
 			if [ "$fechaDesde" -le "$fechaHasta" ]; then
 				gFechaDesde=$fechaDesde
@@ -550,10 +637,7 @@ function checkCondicionFechas
 {
 	fechaDesde=$1
 	fechaHasta=$2
-	valorFecha=$3
-	fechaDesde=`date -d $fechaDesde +%Y%m%d`
-	fechaHasta=`date -d $fechaHasta +%Y%m%d`
-	valorFecha=`date -d $valorFecha +%Y%m%d`
+	valorFecha=$(echo $3 | cut -d"-" -f1)$(echo $3 | cut -d"-" -f2)$(echo $3 | cut -d"-" -f3)
 	if [ "$fechaDesde" -le "$valorFecha" -a "$valorFecha" -le "$fechaHasta"  ]; then
 		return 1
 	else
@@ -688,8 +772,11 @@ function mainPrincipal
 		if [ $? -eq 100 ]; then 
 			echo "FIN DE EJECUCION"
 			return
-		fi		
+		fi
+		loadVectorFuentes
 		recorrerFacturas $FILE_APAGAR "A PAGAR" $gOptBarrido
+		mostrarComprometidos
+		mostrarDisponibilidades
 	done
 }
 #existeFepago
